@@ -144,7 +144,7 @@ class EventHandler(socketserver.BaseRequestHandler):
          for i in range(1, len(self.data), 1):
             params.append(self.data[i])
          response = f(params)
-         self.request.sendall(("EVENTRESPONSE " + str(response)).encode())
+         self.request.sendall(str(response).encode())
       elif (self.data[0] == "ROLE"):
          self.request.sendall(role.encode())
       elif (self.data[0] == "SUBSCRIBE"):
