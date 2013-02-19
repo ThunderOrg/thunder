@@ -46,6 +46,17 @@ body {
 	box-shadow: 0 0px 6px 6px #B0E0E6;
 }
 
+#welcome {
+	position: inline;
+        display: block;
+       	padding: 8px;
+	padding-top: 12px;
+	padding-bottom: 12px;	 
+        margin: 0;
+        float: right;
+	vertical-align: middle;
+}
+
 #logo {
 	font-family: "Josefin Sans", Helvetica, Arial, sans-serif; 
 	font-size: 196px;
@@ -96,7 +107,8 @@ body {
 }
 
 .menuitem:hover {
-	background: #5993E5;
+	background: #B0E0E6;
+        color: #000;
 }
 
 #sep {
