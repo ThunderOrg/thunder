@@ -8,6 +8,8 @@ def invoke(params):
       if (params[0] == "CONTROL"):
          if (params[1] == "GET_CLIENT_LIST"):
             return netEvent.getClientList()
+         elif (params[1] == "GET_CLUSTER_LIST"):
+            return netEvent.getClusterList()
       elif (params[0] == "GROUP"):
          return netEvent.publishToGroup(params[1], params[2])
       elif (params[0] == "HOST"):

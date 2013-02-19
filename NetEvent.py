@@ -38,6 +38,13 @@ class NetEvent():
       while 1:
          self.server.handle_request()
 
+   def getClusterList(self):
+      global clients
+      ret = ''
+      for key in clients:
+         ret += key + ';'
+      return ret
+
    # Register a possible event
    # Name - name of event used as a key
    # Event - function identifier bound to the event name
@@ -54,7 +61,7 @@ class NetEvent():
       # Receive and process response
       response = s.recv(1024).decode()
       s.close()
-      return response
+      return '('+str(host[0])+':'+str(response)+');'
 
    # Publish a message containing data to all clients
    def publishToGroup(self, data, group):
@@ -63,8 +70,11 @@ class NetEvent():
       if (clients.contains(group)):
          ipList = clients.get(group)
          for ip in ipList:
-            responses.append((ip, self.publishToHost(ip, data)))
-      return responses
+            responses.append(self.publishToHost(ip, data))
+      ret = ''
+      for response in responses:
+         ret += response
+      return ret
 
    # Subscribe to a host
    def subscribe(self, host, group):
