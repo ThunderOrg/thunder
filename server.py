@@ -6,9 +6,11 @@ def invoke(params):
       return '-1'
    else:
       if (params[0] == "CONTROL"):
+         print("CONTROL")
          if (params[1] == "GET_CLIENT_LIST"):
             return netEvent.getClientList()
          elif (params[1] == "GET_CLUSTER_LIST"):
+            print(netEvent.getClusterList())
             return netEvent.getClusterList()
       elif (params[0] == "GROUP"):
          return netEvent.publishToGroup(params[2], params[1])
