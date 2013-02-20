@@ -41,7 +41,7 @@ class NetEvent():
    def getClusterList(self):
       global clients
       ret = ''
-      for key in clients:
+      for key in clients.collection():
          ret += key + ';'
       return ret
 
