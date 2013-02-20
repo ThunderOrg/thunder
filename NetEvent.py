@@ -82,6 +82,7 @@ class NetEvent():
       global subscription
       ip = getIP()
       self.subscription = host
+      print(host)
       self.publishToHost(host, "SUBSCRIBE " + ip + " " + str(self.port) + " " + group)
 
    def getSubscription(self):

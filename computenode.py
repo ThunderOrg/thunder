@@ -31,7 +31,7 @@ def utilization(params):
    return retVal
 
 def sysInfo(params):
-
+   print("Sysinfo")
    fullOsName = ''
    for i in platform.dist():
       fullOsName += i + ' '
@@ -41,6 +41,7 @@ def sysInfo(params):
    arch = os.uname()[4]
 
    retVal = shortOsName + " (" + fullOsName + "):" + kernel + ":" + arch
+   print(retVal)
    return retVal
 
 def getStatus(params):

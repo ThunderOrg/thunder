@@ -11,7 +11,7 @@ def invoke(params):
          elif (params[1] == "GET_CLUSTER_LIST"):
             return netEvent.getClusterList()
       elif (params[0] == "GROUP"):
-         return netEvent.publishToGroup(params[1], params[2])
+         return netEvent.publishToGroup(params[2], params[1])
       elif (params[0] == "HOST"):
          host = (params[1], int(params[2]))
          return netEvent.publishToHost(host,params[3])
