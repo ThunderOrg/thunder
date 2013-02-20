@@ -2,7 +2,7 @@
 from NetEvent import *
 
 def invoke(params):
-   if (len(params) < 3):
+   if (len(params) < 2):
       return '-1'
    else:
       if (params[0] == "CONTROL"):
