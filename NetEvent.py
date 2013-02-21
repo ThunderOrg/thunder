@@ -43,7 +43,7 @@ class NetEvent():
       ret = ''
       for key in clients.collection():
          ret += key + ';'
-      return ret
+      return ret[:-1]
 
    # Register a possible event
    # Name - name of event used as a key
@@ -61,7 +61,7 @@ class NetEvent():
       # Receive and process response
       response = s.recv(1024).decode()
       s.close()
-      return '('+str(host[0])+':'+str(response)+');'
+      return '('+str(host[0])+':'+str(response)+')'
 
    # Publish a message containing data to all clients
    def publishToGroup(self, data, group):
@@ -70,11 +70,11 @@ class NetEvent():
       if (clients.contains(group)):
          ipList = clients.get(group)
          for ip in ipList:
-            responses.append(self.publishToHost(ip, data))
+            responses.append(self.publishToHost(ip, data)+';')
       ret = ''
       for response in responses:
          ret += response
-      return ret
+      return ret[:-1]
 
    # Subscribe to a host
    def subscribe(self, host, group):

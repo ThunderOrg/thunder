@@ -28,7 +28,7 @@
 <link rel="stylesheet" href="css/uacare.css"></link>
 </head>
 <body>
-<div id="header"><a class="menuitem" href="help.html">Help</a></div>
+<div id="header"></div>
 <div id = "vcontainer">
 	<p id="logo">UA CARE</p>
 	<p class="sublogo">Education Cloud</p><br />

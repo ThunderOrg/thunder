@@ -26,7 +26,17 @@
          $this->send("INVOKE GROUP ".$group." SYSINFO");
          $response = $this->receive();
          $this->close();
-         return $response;
+         if ($response == '') {return array();}
+         return explode('\;',$response);
+      }
+
+      function getClusterList() {
+         $this->connect();
+         $this->send("INVOKE CONTROL GET_CLUSTER_LIST");
+         $response = $this->receive();
+         $this->close();
+         if ($response == '') {return array();}
+         return explode('\;',$response);
       }
    
       function parseResponse($msg) {

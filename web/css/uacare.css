@@ -32,6 +32,33 @@ body {
 	
 }
 
+ul {
+	margin: 0px;
+}
+
+li {
+	margin: 0px;
+	padding: 3px;
+}
+
+#adminContent {
+	width: auto;
+	margin-left: 275px;
+}
+
+#leftMenu {
+	position: fixed;
+	top: 50px;
+	left: 0;
+	bottom: 0;
+	width: 250px;
+	padding: 0px 0px 15px 15px;
+	margin: 0px; 
+	background: #fff;
+	border-right: 2px solid #999;
+	overflow: auto;
+}
+
 #header {
 	position: relative;
 	display: block;
@@ -40,21 +67,10 @@ body {
 	padding: 0 0 0 0;
 	width: 100%;
 	background: #000;
-	height: auto;
+	height: 50px;
 	-webkit-box-shadow: 0 0px 6px 6px #B0E0E6;
 	-moz-box-shadow: 0 0px 6px 6px #B0E0E6;
 	box-shadow: 0 0px 6px 6px #B0E0E6;
-}
-
-#welcome {
-	position: inline;
-        display: block;
-       	padding: 8px;
-	padding-top: 12px;
-	padding-bottom: 12px;	 
-        margin: 0;
-        float: right;
-	vertical-align: middle;
 }
 
 #logo {
@@ -90,14 +106,31 @@ body {
 	text-shadow: 0px 0px 25px rgba(50, 50, 50, 1);
 }
 
+#leftHeader {
+	float: left;
+	margin: 0;
+	padding: 0;
+	width: auto;
+	height: auto;
+}
+
+#rightHeader {
+	float: right;
+	margin: 0;
+	padding: 0;
+	width: auto;
+	height: auto;
+}
+
 .menuitem {
 	font-weight: 200;
 	font-size: 18px;
-	position: relative;
-	display: inline-block;
-	padding: 8px;
-	padding-top: 12px;
-	padding-bottom: 12px;
+	display: table-cell;
+	padding-left: 5px;
+	padding-right: 5px;
+	height: 50px;
+	width: auto;
+	vertical-align: middle;
 	text-decoration: none;
 	color: #fff;
 	background: #000;
