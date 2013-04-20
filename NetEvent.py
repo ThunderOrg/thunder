@@ -90,7 +90,7 @@ class NetEvent():
       nonce = self.publishToHost(host, "AUTH")
       m = auth.encrypt(nonce)
       self.publishToHost(host,m.decode("utf-8"))
-      self.publishToHost(host, "SUBSCRIBE " + ip + " " + str(self.port) + " " + group)
+      #self.publishToHost(host, "SUBSCRIBE " + ip + " " + str(self.port) + " " + group)
 
    def getSubscription(self):
       try:
@@ -170,8 +170,8 @@ class EventHandler(socketserver.BaseRequestHandler):
          self.request.sendall(n.encode())
          r = self.request.recv(1024).decode()
          m = auth.encrypt(n).decode("utf-8")
-         print(m)
-         print(r)
+         print("m =",m)
+         print("r =",r)
 
       elif (self.data[0] == "SUBSCRIBE"):
          if (len(self.data) == 4): 
