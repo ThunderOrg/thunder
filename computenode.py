@@ -28,6 +28,7 @@ def utilization(params):
    fifteenMin = data[2]
 
    retVal = memtotal + ":" + memfree + ":" + oneMin + ":" + fiveMin + ":" + fifteenMin
+   print(retVal)
    return retVal
 
 def sysInfo(params):
@@ -54,4 +55,3 @@ def instantiate(params):
    return 1
 
 main()
-
