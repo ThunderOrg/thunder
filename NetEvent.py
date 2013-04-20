@@ -92,8 +92,6 @@ class NetEvent():
       nonce = nonce[1:-1].split(':')[1]
       s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
       s.connect(host)
-      nonce = s.recv(1024).decode()
-      print("Nonce =",nonce)
       m = auth.encrypt(nonce)
       print("m =",m)
       s.send(m)
