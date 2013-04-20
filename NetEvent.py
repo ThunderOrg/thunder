@@ -171,8 +171,9 @@ class EventHandler(socketserver.BaseRequestHandler):
          nonce = auth.generateNonce()
          self.request.sendall(nonce.encode())
       elif (self.data[0] == "SUBSCRIBE"):
+         print(auth.decrypt(self.data[4].encode("utf-8")))
+         print(nonce)
          if (auth.decrypt(self.data[4].encode("utf-8")) == nonce):
-            print("Authorized")
             if (len(self.data) == 5): 
                # The group exists
                if (clients.contains(self.data[3])):
