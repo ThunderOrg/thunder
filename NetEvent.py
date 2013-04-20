@@ -87,10 +87,14 @@ class NetEvent():
       ip = getIP()
       self.subscription = host
       print(host)
-      nonce = self.publishToHost(host, "AUTH")[1:-1].split(':')[1]
+      s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+      s.connect(host)
+      s.send("AUTH".encode())
+      nonce = s.recv(1024).decode()
       print("Nonce =",nonce)
       m = auth.encrypt(nonce)
-      self.publishToHost(host,m.decode("utf-8"))
+      s.send(m.encode())
+      s.close()
       #self.publishToHost(host, "SUBSCRIBE " + ip + " " + str(self.port) + " " + group)
 
    def getSubscription(self):
