@@ -91,7 +91,7 @@ class NetEvent():
       print(host)
 
       nonce = self.publishToHost(host, "AUTH")
-      self.publishToHost(host, "SUBSCRIBE " + ip + " " + str(self.port) + " " + group + " " + auth.encrypt(nonce))
+      self.publishToHost(host, "SUBSCRIBE " + ip + " " + str(self.port) + " " + group + " " + auth.encrypt(nonce).decode("utf-8"))
 
    def getSubscription(self):
       try:
@@ -171,7 +171,7 @@ class EventHandler(socketserver.BaseRequestHandler):
          nonce = auth.generateNonce()
          self.request.sendall(nonce.encode())
       elif (self.data[0] == "SUBSCRIBE"):
-         if (decrypt(self.data[4]) == nonce):
+         if (decrypt(self.data[4].encode("utf-8")) == nonce):
             if (len(self.data) == 5): 
                # The group exists
                if (clients.contains(self.data[3])):
