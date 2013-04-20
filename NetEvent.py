@@ -87,15 +87,17 @@ class NetEvent():
       ip = getIP()
       self.subscription = host
       print(host)
+
+      self.publishToHost(host, "SUBSCRIBE " + ip + " " + str(self.port) + " " + group)
+      
       s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
       s.connect(host)
-      s.send("AUTH".encode())
       nonce = s.recv(1024).decode()
       print("Nonce =",nonce)
       m = auth.encrypt(nonce)
       s.send(m.encode())
       s.close()
-      #self.publishToHost(host, "SUBSCRIBE " + ip + " " + str(self.port) + " " + group)
+
 
    def getSubscription(self):
       try:
@@ -170,22 +172,21 @@ class EventHandler(socketserver.BaseRequestHandler):
          self.request.sendall(str(response).encode())
       elif (self.data[0] == "ROLE"):
          self.request.sendall(role.encode())
-      elif (self.data[0] == "AUTH"):
+      elif (self.data[0] == "SUBSCRIBE"):
          n = auth.generateNonce()
          self.request.sendall(n.encode())
          r = self.request.recv(1024).decode()
          m = auth.encrypt(n).decode("utf-8")
          print("m =",m)
          print("r =",r)
-
-      elif (self.data[0] == "SUBSCRIBE"):
-         if (len(self.data) == 4): 
-            # The group exists
-            if (clients.contains(self.data[3])):
-               c = clients.get(self.data[3])
-               c.append((self.data[1], int(self.data[2])))
-            # The group does not exist
-            else:
-               c = [(self.data[1], int(self.data[2]))]
-               clients.append((self.data[3], c))
+         if (m == r):
+            if (len(self.data) == 4): 
+               # The group exists
+               if (clients.contains(self.data[3])):
+                  c = clients.get(self.data[3])
+                  c.append((self.data[1], int(self.data[2])))
+               # The group does not exist
+               else:
+                  c = [(self.data[1], int(self.data[2]))]
+                  clients.append((self.data[3], c))
       self.request.close()
