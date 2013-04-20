@@ -16,6 +16,8 @@ subscription = ""
 
 role = ""
 
+nonce = ""
+
 # Retreive the private IP of this system
 def getIP():
    return socket.gethostbyname(socket.gethostname())
@@ -88,15 +90,8 @@ class NetEvent():
       self.subscription = host
       print(host)
 
-      nonce = self.publishToHost(host, "SUBSCRIBE " + ip + " " + str(self.port) + " " + group)
-      nonce = nonce[1:-1].split(':')[1]
-      s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-      s.connect(host)
-      m = auth.encrypt(nonce)
-      print("m =",m)
-      s.send(m)
-      s.close()
-
+      nonce = self.publishToHost(host, "AUTH")
+      self.publishToHost(host, "SUBSCRIBE " + ip + " " + str(self.port) + " " + group + " " + encrpyt(nonce))
 
    def getSubscription(self):
       try:
@@ -158,6 +153,7 @@ class EventHandler(socketserver.BaseRequestHandler):
       global clients
       global events
       global role
+      global nonce
       self.data = self.request.recv(1024).decode().split()
       print(self.data)
       # data[0] -> command
@@ -171,12 +167,12 @@ class EventHandler(socketserver.BaseRequestHandler):
          self.request.sendall(str(response).encode())
       elif (self.data[0] == "ROLE"):
          self.request.sendall(role.encode())
+      elif (self.data[0] == "AUTH"):
+         nonce = auth.generateNonce()
+         self.request.sendall(nonce.encode())
       elif (self.data[0] == "SUBSCRIBE"):
-         n = auth.generateNonce()
-         self.request.sendall(n.encode())
-         print("n =",n)
-         if (m == r):
-            if (len(self.data) == 4): 
+         if (decrypt(self.data[4]) == nonce):
+            if (len(self.data) == 5): 
                # The group exists
                if (clients.contains(self.data[3])):
                   c = clients.get(self.data[3])
