@@ -169,7 +169,7 @@ class EventHandler(socketserver.BaseRequestHandler):
          n = auth.generateNonce()
          self.request.sendall(n)
          r = self.request.recv(1024).decode()
-         m = encrypt(n).decode("utf-8")\
+         m = encrypt(n).decode("utf-8")
          print(m)
          print(r)
 
