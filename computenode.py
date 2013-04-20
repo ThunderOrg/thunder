@@ -10,7 +10,7 @@ def main():
    netEvent.registerEvent("SYSINFO", sysInfo)
    netEvent.registerEvent("INSTANTIATE", instantiate)
    netEvent.associateGroup("PRIMARY_COMPUTE")
-   master = netEvent.findMaster()
+   master = netEvent.findController()
 
 def utilization(params):
    # Get memory utilization
@@ -31,7 +31,6 @@ def utilization(params):
    return retVal
 
 def sysInfo(params):
-   print("Sysinfo")
    fullOsName = ''
    for i in platform.dist():
       fullOsName += i + ' '

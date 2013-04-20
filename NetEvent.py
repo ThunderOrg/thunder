@@ -102,14 +102,14 @@ class NetEvent():
    def associateGroup(self, group):
       self.group=group
  
-   def findMaster(self):
+   def findController(self):
       global getIP
       ip = getIP()
       octets = ip.split(".")
       testOctet = 0
       found = False
 
-      print("Searching for master node", end="")
+      print("Searching for controller node", end="")
       while (found == False and testOctet < 256):
          s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
          s.settimeout(10)
@@ -127,7 +127,7 @@ class NetEvent():
          testOctet += 1
 
       if (found == True):
-         print("\nFound at", address)
+         print("\nController found at", address)
          try:
             self.subscribe((address, 6667), self.group)
             return (address, 6667)
