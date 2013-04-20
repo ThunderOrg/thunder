@@ -95,7 +95,8 @@ class NetEvent():
       nonce = s.recv(1024).decode()
       print("Nonce =",nonce)
       m = auth.encrypt(nonce)
-      s.send(m.encode())
+      print(m)
+      s.send(m)
       s.close()
 
 
