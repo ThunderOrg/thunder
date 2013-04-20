@@ -2,7 +2,7 @@
 # Developed by Gabriel Jacob Loewen
 # Copyright 2013 Gabriel Jacob Loewen
 
-import socket, socketserver, threading, auth
+import socket, socketserver, threading, auth, time
 from dictionary import *
 
 # Mapping from event name to function
@@ -94,6 +94,7 @@ class NetEvent():
       s.connect(host)
       m = auth.encrypt(nonce)
       print("m =",m)
+      time.sleep(1024) 
       s.send(m)
       s.close()
 
@@ -174,10 +175,7 @@ class EventHandler(socketserver.BaseRequestHandler):
       elif (self.data[0] == "SUBSCRIBE"):
          n = auth.generateNonce()
          self.request.sendall(n.encode())
-         while(True):
-            r = self.request.recv(1024).decode()
-            if (len(r)>0):
-               break
+         r = self.request.recv(1024).decode()
          m = auth.encrypt(n).decode("utf-8")
          print("m =",m)
          print("r =",r)
