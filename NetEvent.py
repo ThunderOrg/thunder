@@ -94,7 +94,6 @@ class NetEvent():
       s.connect(host)
       m = auth.encrypt(nonce)
       print("m =",m)
-      time.sleep(1024) 
       s.send(m)
       s.close()
 
@@ -175,10 +174,7 @@ class EventHandler(socketserver.BaseRequestHandler):
       elif (self.data[0] == "SUBSCRIBE"):
          n = auth.generateNonce()
          self.request.sendall(n.encode())
-         r = self.request.recv(1024).decode()
-         m = auth.encrypt(n).decode("utf-8")
-         print("m =",m)
-         print("r =",r)
+         print("n =",n)
          if (m == r):
             if (len(self.data) == 4): 
                # The group exists
