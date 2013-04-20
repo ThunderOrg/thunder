@@ -174,7 +174,10 @@ class EventHandler(socketserver.BaseRequestHandler):
       elif (self.data[0] == "SUBSCRIBE"):
          n = auth.generateNonce()
          self.request.sendall(n.encode())
-         r = self.request.recv(1024).decode()
+         while(True):
+            r = self.request.recv(1024).decode()
+            if (len(r)>0):
+               break
          m = auth.encrypt(n).decode("utf-8")
          print("m =",m)
          print("r =",r)
