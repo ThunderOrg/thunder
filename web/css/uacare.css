@@ -41,8 +41,25 @@ li {
 	padding: 3px;
 }
 
+.nodeinfo {
+        position: relative;
+	display: block;
+        width: 50%;
+	height: auto;
+	padding: 10px;
+	background: #fff;
+	color: #000;
+	margin-left: 10px;
+	border: 1px solid #000;
+}
+
+.nodeinfo h2 {
+	margin: 0;
+}
+
 #adminContent {
 	width: auto;
+        padding-top: 20px;
 	margin-left: 275px;
 }
 

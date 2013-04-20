@@ -65,25 +65,35 @@ class Authorization {
    }
 
    function GetLoginSessionVar() {
-      if (isset($_SESSION[$this->username])) {
-         $ret = $_SESSION[$this->username];
+      if (!isset($_SESSION)) {
+         session_start();
+      }
+      if (isset($_SESSION['uuid'])) {
+         $ret = $_SESSION['uuid'];
       } else {
          $ret = false;
       }
       return $ret;
    }
 
-   function Logout() {
-      session_start();
-      $sessionvar = $this->GetLoginSessionVar();
-      $_SESSION['uuid']=NULL;
-      unset($_SESSION['uuid']);
-      header("Location: index.php");
-   }
-
    function Redirect($url) {
       header("Location: $url");
       exit;
+   }
+   
+   function Logout() {
+      if (!isset($_SESSION)) {
+         session_start();
+      }
+      $_SESSION['uuid']=NULL;
+      unset($_SESSION['uuid']);
+      $_SESSION['username']=NULL;
+      unset($_SESSION['username']);
+      $_SESSION['role']=NULL;
+      unset($_SESSION['role']);
+      $_SESSION['name']=NULL;
+      unset($_SESSION['name']);
+      header("Location: index.php");
    }
    
    function CheckLoginInDB($username, $passhash) {
@@ -111,7 +121,9 @@ class Authorization {
    }
 
    function CheckLogin() {
-      session_start();
+      if (!isset($_SESSION)) {
+         session_start();
+      }
       if (empty($_SESSION['uuid'])) {
          return false;
       }
@@ -127,6 +139,9 @@ class Authorization {
    }
 
    function GetName() {
+      if (!isset($_SESSION)) {
+         session_start();
+      }
       if (isset($_SESSION['name'])) {
          return $_SESSION['name'];
       } else {

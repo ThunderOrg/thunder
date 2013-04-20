@@ -11,13 +11,6 @@
 <head>
 <title>UA Care - Education Cloud</title>
 <link rel="stylesheet" href="css/uacare.css"></link>
-<script type="text/javascript" src="scripts/jquery-1.9.1.min.js"></script>
-<script>
-   function loadClusterInfo(name) {
-	$("#adminContent").append("<p>name</p>");
-	return false;
-   }
-</script>
 </head>
 <body>
 <div id="header"><div id="rightHeader"><a class="menuitem" href="logout.php"><?php echo $authorization->GetName(); ?></a></div></div>
@@ -35,7 +28,7 @@
 		    echo "<li>No clusters found</li>";
 		 } else {
 		    for ($i=0;$i<count($cluster);$i = $i +1) {
-		       echo "<li><a href=\"#\" onclick=\"loadClusterInfo(\"".$cluster[$i]."\");\">".$cluster[$i]."</a></li>";
+		       echo "<li><a href=\"getClusterData.php?cname=".$cluster[$i]."\">".$cluster[$i]."</a></li>";
 		    }
 		 }
 	      ?>
@@ -54,7 +47,15 @@
    </details>
    </div>
 </div>
-<div id="adminContent"></div>
+<div id="adminContent">
+  <?php
+     session_start();
+     if (isset($_SESSION['dat_file'])) {
+        $file = $_SESSION['dat_file'];
+        echo file_get_contents($file);
+     }
+  ?>
+</div>
 <p id="corner">Revision 2</p>
 </body>
 </html>
