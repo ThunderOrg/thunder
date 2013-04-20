@@ -88,7 +88,7 @@ class NetEvent():
       self.subscription = host
       print(host)
       nonce = self.publishToHost(host, "AUTH")
-      m = encrypt(nonce)
+      m = auth.encrypt(nonce)
       self.publishToHost(host,m.decode("utf-8"))
       self.publishToHost(host, "SUBSCRIBE " + ip + " " + str(self.port) + " " + group)
 
@@ -167,7 +167,7 @@ class EventHandler(socketserver.BaseRequestHandler):
          self.request.sendall(role.encode())
       elif (self.data[0] == "AUTH"):
          n = auth.generateNonce()
-         self.request.sendall(n)
+         self.request.sendall(n.encode())
          r = self.request.recv(1024).decode()
          m = encrypt(n).decode("utf-8")
          print(m)
