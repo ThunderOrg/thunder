@@ -1,4 +1,8 @@
-import socket, socketserver, threading
+# NetEvent API for building cloud middleware.
+# Developed by Gabriel Jacob Loewen
+# Copyright 2013 Gabriel Jacob Loewen
+
+import socket, socketserver, threading, auth
 from dictionary import *
 
 # Mapping from event name to function
@@ -83,6 +87,9 @@ class NetEvent():
       ip = getIP()
       self.subscription = host
       print(host)
+      nonce = self.publishToHost(host, "AUTH")
+      m = encrypt(nonce)
+      self.publishToHost(host,m.decode("utf-8"))
       self.publishToHost(host, "SUBSCRIBE " + ip + " " + str(self.port) + " " + group)
 
    def getSubscription(self):
@@ -158,6 +165,14 @@ class EventHandler(socketserver.BaseRequestHandler):
          self.request.sendall(str(response).encode())
       elif (self.data[0] == "ROLE"):
          self.request.sendall(role.encode())
+      elif (self.data[0] == "AUTH"):
+         n = auth.generateNonce()
+         self.request.sendall(n)
+         r = self.request.recv(1024).decode()
+         m = encrypt(n).decode("utf-8")\
+         print(m)
+         print(r)
+
       elif (self.data[0] == "SUBSCRIBE"):
          if (len(self.data) == 4): 
             # The group exists
@@ -169,4 +184,3 @@ class EventHandler(socketserver.BaseRequestHandler):
                c = [(self.data[1], int(self.data[2]))]
                clients.append((self.data[3], c))
       self.request.close()
-
