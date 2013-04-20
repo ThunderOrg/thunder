@@ -91,7 +91,7 @@ class NetEvent():
       print(host)
 
       nonce = self.publishToHost(host, "AUTH")
-      self.publishToHost(host, "SUBSCRIBE " + ip + " " + str(self.port) + " " + group + " " + encrpyt(nonce))
+      self.publishToHost(host, "SUBSCRIBE " + ip + " " + str(self.port) + " " + group + " " + auth.encrypt(nonce))
 
    def getSubscription(self):
       try:
