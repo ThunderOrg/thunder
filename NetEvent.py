@@ -87,7 +87,7 @@ class NetEvent():
       ip = getIP()
       self.subscription = host
       print(host)
-      nonce = self.publishToHost(host, "AUTH")
+      nonce = self.publishToHost(host, "AUTH")[1:-1].split(':')
       print("Nonce =",nonce)
       m = auth.encrypt(nonce)
       self.publishToHost(host,m.decode("utf-8"))
