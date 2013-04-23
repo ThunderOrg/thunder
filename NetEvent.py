@@ -110,7 +110,9 @@ class NetEvent():
       found = False
 
       print("Searching for controller node", end="")
-      while (found == False and testOctet < 256):
+      while (found == False):
+         if (testOctet == 256):
+            testOctet = 0
          s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
          s.settimeout(10)
          address = octets[0] + '.' + octets[1] + '.1.' + str(testOctet)
@@ -171,7 +173,8 @@ class EventHandler(socketserver.BaseRequestHandler):
          nonce = auth.generateNonce()
          self.request.sendall(nonce.encode())
       elif (self.data[0] == "SUBSCRIBE"):
-         m = auth.decrypt(self.data[4].encode("utf-8")).decode("utf-8")[1:-1].split(':')[1]
+         r = self.data[4].encode("utf-8")
+         m = auth.decrypt(r).decode("utf-8")[1:-1].split(':')[1]
          if (m == nonce):
             print("Authenticated")
             if (len(self.data) == 5): 
