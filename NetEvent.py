@@ -61,7 +61,7 @@ class NetEvent():
 
    # Publish a message containing data to a specific host
    def publishToHost(self, host, data):
-      print("Sending data at time:",host,strftime("%Y-%m-%d %H:%M:%S", gmtime()))
+      print("Sending data at time:",strftime("%Y-%m-%d %H:%M:%S", gmtime()))
       s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
       s.connect(host)
       # Send data
@@ -159,7 +159,7 @@ class EventHandler(socketserver.BaseRequestHandler):
       global role
       global nonce
       self.data = self.request.recv(1024).decode().split()
-      print("Before trigger:",host,strftime("%Y-%m-%d %H:%M:%S", gmtime()))
+      print("Before trigger:",strftime("%Y-%m-%d %H:%M:%S", gmtime()))
       print(self.data)
       # data[0] -> command
       # data[1] ... data[n] -> args
@@ -189,5 +189,5 @@ class EventHandler(socketserver.BaseRequestHandler):
                else:
                   c = [(self.data[1], int(self.data[2]))]
                   clients.append((self.data[3], c))
-      print("After trigger:",host,strftime("%Y-%m-%d %H:%M:%S", gmtime()))
+      print("After trigger:",strftime("%Y-%m-%d %H:%M:%S", gmtime()))
       self.request.close()
