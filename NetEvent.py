@@ -79,7 +79,9 @@ class NetEvent():
                if (ips[i][0] == host):
                   ips[i] = None
                   del ips[i]
+                  print(len(ips))
                   if (len(ips) == 0):
+                     print("Removed group", key)
                      clients.remove(key)
                   return None
                   
