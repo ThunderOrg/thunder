@@ -78,6 +78,8 @@ class NetEvent():
             for i in range(0, len(ips), 1):
                if (ips[i][0] == host[0]):
                   ips.pop(i)
+                  if (len(ips) == 0):
+                     clients.remove(key)
          return None
                   
    # Publish a message containing data to all clients
