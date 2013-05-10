@@ -77,8 +77,9 @@ class NetEvent():
             ips = clients.get(key)
             for i in range(0, len(ips), 1):
                if (ips[i][0] == host):
+                  print("Removing item")
                   ips.pop(i)
-                  return None
+         return None
                   
    # Publish a message containing data to all clients
    def publishToGroup(self, data, group):
@@ -86,13 +87,10 @@ class NetEvent():
       responses = []
       if (clients.contains(group)):
          ipList = clients.get(group)
-         if (len(ipList) == 0):
-            clients.remove(group)
-         else:
-            for ip in ipList:
-               val = self.publishToHost(ip, data)
-               if (val != None):
-                  responses.append(val+';')
+         for ip in ipList:
+            val = self.publishToHost(ip, data)
+            if (val != None):
+               responses.append(val+';')
       ret = ''
       for response in responses:
          ret += response
