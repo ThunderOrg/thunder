@@ -74,13 +74,13 @@ class NetEvent():
       except:
          print("Host not found.  Removing from collection.")
          for key in clients.collection():
-            for val in clients.get(key):
-               print(val)
-               #if (val == host):
-               #   key[val] = None
-               #   del key[val]
-               #   return None
-   
+            ips = clients.get(key)
+            for i in range(0, len(ips), 1):
+               if (ips[i][0] == host):
+                  ips[i] = None
+                  del ips[i]
+                  return None
+                  
    # Publish a message containing data to all clients
    def publishToGroup(self, data, group):
       global clients
@@ -88,7 +88,9 @@ class NetEvent():
       if (clients.contains(group)):
          ipList = clients.get(group)
          for ip in ipList:
-            responses.append(self.publishToHost(ip, data)+';')
+            val = self.publishToHost(ip, data)
+            if (val != None):
+               responses.append(val+';')
       ret = ''
       for response in responses:
          ret += response
