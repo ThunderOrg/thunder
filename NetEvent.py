@@ -76,6 +76,8 @@ class NetEvent():
          for key in clients.collection():
             ips = clients.get(key)
             for i in range(0, len(ips), 1):
+               print("host =", host)
+               print("found", ips[i][0])
                if (ips[i][0] == host):
                   print("Removing item")
                   ips.pop(i)
