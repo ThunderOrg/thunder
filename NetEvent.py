@@ -75,10 +75,11 @@ class NetEvent():
          print("Host not found.  Removing from collection.")
          for key in clients.collection():
             for val in clients.get(key):
-               if (val == host):
-                  key[val] = None
-                  del key[val]
-                  return None
+               print(val)
+               #if (val == host):
+               #   key[val] = None
+               #   del key[val]
+               #   return None
    
    # Publish a message containing data to all clients
    def publishToGroup(self, data, group):
