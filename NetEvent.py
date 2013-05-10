@@ -63,7 +63,14 @@ class NetEvent():
    def publishToHost(self, host, data):
       print("Sending data at time:",str(datetime.now()))
       s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-      s.connect(host)
+      try:
+         s.connect(host)
+      except:
+         for key in clients.collection():
+            for val in clients.get(key):
+               if (val == host):
+                  key[val] = None
+                  del key[val]
       # Send data
       s.send(data.encode())
       # Receive and process response
