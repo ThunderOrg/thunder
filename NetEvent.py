@@ -79,6 +79,7 @@ class NetEvent():
                if (ips[i][0] == host):
                   ips[i] = None
                   del ips[i]
+                  clients.collection()[key] = ips
                   return None
                   
    # Publish a message containing data to all clients
