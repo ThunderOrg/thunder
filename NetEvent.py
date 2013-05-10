@@ -5,7 +5,7 @@
 import socket, socketserver, threading, auth, time
 from dictionary import *
 from datetime import datetime
-import events as builtinEvents
+from events import *
 
 # Mapping from event name to function
 events = Dictionary()
@@ -35,8 +35,8 @@ class NetEvent():
       self.port = self.server.server_address[1]
       self.server.isDaemon = True
       self.start()
-      self.registerEvent("UTILIZATION", builtinEvents.utilization)
-      self.registerEvent("SYSINFO", builtinEvents.sysInfo)
+      self.registerEvent("UTILIZATION", utilization)
+      self.registerEvent("SYSINFO", sysInfo)
 
    # Start thread for handling requests
    def start(self):
