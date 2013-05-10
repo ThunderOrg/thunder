@@ -66,6 +66,7 @@ class NetEvent():
       try:
          s.connect(host)
       except socket.error:
+         print("Host not found.  Removing from collection.")
          for key in clients.collection():
             for val in clients.get(key):
                if (val == host):
