@@ -3,6 +3,7 @@
 # Copyright 2013 Gabriel Jacob Loewen
 
 import socket, socketserver, threading, auth, time
+from threading import Timer
 from dictionary import *
 from datetime import datetime
 import events as builtinEvents
@@ -19,6 +20,8 @@ subscription = ""
 role = ""
 
 nonce = ""
+
+group = ""
 
 # Retreive the private IP of this system
 def getIP():
@@ -64,6 +67,9 @@ class NetEvent():
 
    # Publish a message containing data to a specific host
    def publishToHost(self, host, data):
+      global group
+      global clients
+      global subscription
       print("Sending data at time:",str(datetime.now()))
       try:
          s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -75,17 +81,20 @@ class NetEvent():
          s.close()
          return '('+str(host[0])+':'+str(response)+')'
       except:
-         print("Host not found.  Removing from collection.")
-         rmGroups = []
-         for key in clients.collection():
-            ips = clients.get(key)
-            for i in range(0, len(ips), 1):
-               if (ips[i][0] == host[0]):
-                  ips.pop(i)
-                  if (len(ips) == 0):
-                     rmGroups.append(key)
-         for group in rmGroups:
-            clients.remove(group)
+         if (len(subscription) != 0 and host[0] == subscription[0]):
+            controller = self.findController()
+            self.subscribe(controller, group)
+         else:
+            rmGroups = []
+            for key in clients.collection():
+               ips = clients.get(key)
+               for i in range(0, len(ips), 1):
+                  if (ips[i][0] == host[0]):
+                     ips.pop(i)
+                     if (len(ips) == 0):
+                        rmGroups.append(key)
+            for grp in rmGroups:
+               clients.remove(grp)
          return None
                   
    # Publish a message containing data to all clients
@@ -104,9 +113,13 @@ class NetEvent():
       return ret[:-1]
 
    # Subscribe to a host
-   def subscribe(self, host, group):
+   def subscribe(self, host, grp):
       global getIP
       global subscription
+      global aliveTimer
+      global group
+
+      group = grp
       ip = getIP()
       self.subscription = host
       print(host)
