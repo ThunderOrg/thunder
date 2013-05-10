@@ -65,12 +65,13 @@ class NetEvent():
       s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
       try:
          s.connect(host)
-      except:
+      except socket.error:
          for key in clients.collection():
             for val in clients.get(key):
                if (val == host):
                   key[val] = None
                   del key[val]
+                  return None
       # Send data
       s.send(data.encode())
       # Receive and process response
