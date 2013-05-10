@@ -73,13 +73,16 @@ class NetEvent():
          return '('+str(host[0])+':'+str(response)+')'
       except:
          print("Host not found.  Removing from collection.")
+         rmGroups = []
          for key in clients.collection():
             ips = clients.get(key)
             for i in range(0, len(ips), 1):
                if (ips[i][0] == host[0]):
                   ips.pop(i)
                   if (len(ips) == 0):
-                     clients.remove(key)
+                     rmGroups.append(key)
+         for group in rmGroups:
+            clients.remove(group)
          return None
                   
    # Publish a message containing data to all clients
