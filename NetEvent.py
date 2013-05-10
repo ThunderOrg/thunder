@@ -62,10 +62,16 @@ class NetEvent():
    # Publish a message containing data to a specific host
    def publishToHost(self, host, data):
       print("Sending data at time:",str(datetime.now()))
-      s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
       try:
+         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
          s.connect(host)
-      except socket.error:
+         # Send data
+         s.send(data.encode())
+         # Receive and process response
+         response = s.recv(1024).decode()
+         s.close()
+         return '('+str(host[0])+':'+str(response)+')'
+      except:
          print("Host not found.  Removing from collection.")
          for key in clients.collection():
             for val in clients.get(key):
@@ -73,13 +79,7 @@ class NetEvent():
                   key[val] = None
                   del key[val]
                   return None
-      # Send data
-      s.send(data.encode())
-      # Receive and process response
-      response = s.recv(1024).decode()
-      s.close()
-      return '('+str(host[0])+':'+str(response)+')'
-
+   
    # Publish a message containing data to all clients
    def publishToGroup(self, data, group):
       global clients
