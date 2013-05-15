@@ -7,6 +7,7 @@ from threading import Timer
 from dictionary import *
 from datetime import datetime
 import events as builtinEvents
+from time import sleep
 
 # Mapping from event name to function
 events = Dictionary()
@@ -56,6 +57,7 @@ class NetEvent():
             resp = self.publishToHost(subscription, "ALIVE")
             if (resp == None):
                alive = False
+         sleep(5000)
       controller = self.findController()
       self.subscribe(controller, group)
 
@@ -207,7 +209,6 @@ class EventHandler(socketserver.BaseRequestHandler):
       global role
       global nonce
       self.data = self.request.recv(1024).decode().split()
-      print("Before trigger:",str(datetime.now()))
       print(self.data)
       # data[0] -> command
       # data[1] ... data[n] -> args
@@ -237,5 +238,7 @@ class EventHandler(socketserver.BaseRequestHandler):
                else:
                   c = [(self.data[1], int(self.data[2]))]
                   clients.append((self.data[3], c))
-      print("After trigger:",str(datetime.now()))
+      elif (self.data[0] == "ALIVE"):
+         self.request.sendall("Y".encode())
+
       self.request.close()
