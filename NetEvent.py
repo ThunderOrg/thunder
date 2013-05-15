@@ -15,7 +15,7 @@ events = Dictionary()
 clients = Dictionary()
 
 # Subscription identifier
-subscription = ""
+subscription = None
 
 role = ""
 
@@ -38,8 +38,26 @@ class NetEvent():
       self.port = self.server.server_address[1]
       self.server.isDaemon = True
       self.start()
+      # Register some data aggregation events for cpu/ram utilization as well as general system info
       self.registerEvent("UTILIZATION", builtinEvents.utilization)
       self.registerEvent("SYSINFO", builtinEvents.sysInfo)
+
+   # Start thread for checking the controller node to ensure that it is still alive.
+   def startFaultTolerance(self):
+      self.lifeGuardThread = threading.Thread(target = self.lifeGuard)
+      self.lifeGuardThread.start()
+
+   def lifeGuard(self):
+      global subscription
+      global group
+      alive = True
+      while(alive):
+         if (subscription != None):
+            resp = self.publishToHost(subscription, "ALIVE")
+            if (resp = None):
+               alive = False
+      controller = self.findController()
+      self.subscribe(controller, group)
 
    # Start thread for handling requests
    def start(self):
@@ -81,10 +99,7 @@ class NetEvent():
          s.close()
          return '('+str(host[0])+':'+str(response)+')'
       except:
-         if (len(subscription) != 0 and host[0] == subscription[0]):
-            controller = self.findController()
-            self.subscribe(controller, group)
-         else:
+         if (len(subscription) == 0 or host[0] != subscription[0]):
             rmGroups = []
             for key in clients.collection():
                ips = clients.get(key)
@@ -126,6 +141,7 @@ class NetEvent():
 
       nonce = self.publishToHost(host, "AUTH")
       self.publishToHost(host, "SUBSCRIBE " + ip + " " + str(self.port) + " " + group + " " + auth.encrypt(nonce).decode("utf-8"))
+      self.startFaultTolerance()
 
    def getSubscription(self):
       try:
