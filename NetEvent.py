@@ -54,7 +54,7 @@ class NetEvent():
       while(alive):
          if (subscription != None):
             resp = self.publishToHost(subscription, "ALIVE")
-            if (resp = None):
+            if (resp == None):
                alive = False
       controller = self.findController()
       self.subscribe(controller, group)
