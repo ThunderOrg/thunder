@@ -3,14 +3,14 @@ from Crypto import Random
 from Crypto.Random import random
 from Crypto.Cipher import AES
 
-k = 'YM{<GC\xdaQ\x80\xe8\xd8\xcf\xf1\xf7\xdaM'
+k = b'YM{<GC\xdaQ\x80\xe8\xd8\xcf\xf1\xf7\xdaM'
 
 BS = 16
-pad = lambda s: s + (BS - len(s) % BS) * unichr(BS - len(s) % BS) 
-unpad = lambda s : s[0:-ord(unichr(s[-1]))]
+pad = lambda s: s + (BS - len(s) % BS) * chr(BS - len(s) % BS) 
+unpad = lambda s : s[0:-ord(chr(s[-1]))]
 
 def generateNonce():
-   return unicode(random.getrandbits(32))
+   return str(random.getrandbits(32))
 
 def encrypt( raw ):
    raw = pad(raw)
