@@ -1,3 +1,6 @@
+import os
+import platform
+
 def utilization(params):
    # Get memory utilization
    memInfo = open('/proc/meminfo','r')
