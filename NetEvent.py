@@ -92,7 +92,6 @@ class NetEvent():
       global group
       global clients
       global subscription
-      print("Sending data at time:",str(datetime.now()))
       try:
          s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
          s.connect(host)
@@ -164,8 +163,8 @@ class NetEvent():
       found = False
 
       print("Searching for controller node", end="")
-      s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
       while (found == False):
+         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
          if (testOctet == 256):
             testOctet = 0
          s.settimeout(10)
