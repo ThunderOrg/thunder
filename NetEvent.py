@@ -2,12 +2,13 @@
 # Developed by Gabriel Jacob Loewen
 # Copyright 2013 Gabriel Jacob Loewen
 
-import socket, socketserver, threading, auth, time
+import socket, SocketServer, threading, auth, time
 from threading import Timer
 from dictionary import *
 from datetime import datetime
 import events as builtinEvents
 from time import sleep
+import sys
 
 # Mapping from event name to function
 events = Dictionary()
@@ -18,11 +19,11 @@ clients = Dictionary()
 # Subscription identifier
 subscription = None
 
-role = ""
+role = u""
 
-nonce = ""
+nonce = u""
 
-group = ""
+group = u""
 
 # Retreive the private IP of this system
 def getIP():
@@ -32,17 +33,17 @@ def getIP():
 class NetEvent():
 
    # Constructor, creates the TCP server
-   def __init__(self, port = 0, r = "CLIENT"):
+   def __init__(self, port = 0, r = u"CLIENT"):
       global role
       global group
       role = r
-      self.server = socketserver.TCPServer((getIP(), port), EventHandler)
+      self.server = SocketServer.TCPServer((getIP(), port), EventHandler)
       self.port = self.server.server_address[1]
       self.server.isDaemon = True
       self.start()
       # Register some data aggregation events for cpu/ram utilization as well as general system info
-      self.registerEvent("UTILIZATION", builtinEvents.utilization)
-      self.registerEvent("SYSINFO", builtinEvents.sysInfo)
+      self.registerEvent(u"UTILIZATION", builtinEvents.utilization)
+      self.registerEvent(u"SYSINFO", builtinEvents.sysInfo)
 
    # Start thread for checking the controller node to ensure that it is still alive.
    def startFaultTolerance(self):
@@ -54,13 +55,13 @@ class NetEvent():
       global group
       alive = True
       while(alive):
-         print("Checking host status")
+         print u"Checking host status"
          if (subscription != None):
-            resp = self.publishToHost(subscription, "ALIVE")
+            resp = self.publishToHost(subscription, u"ALIVE")
             if (resp == None):
                alive = False
          sleep(30)
-      print("Controller lost.  Starting search.")
+      print u"Controller lost.  Starting search."
       self.findController()
 
    # Start thread for handling requests
@@ -75,9 +76,9 @@ class NetEvent():
 
    def getClusterList(self):
       global clients
-      ret = ''
+      ret = u''
       for key in clients.collection():
-         ret += key + ';'
+         ret += key + u';'
       return ret[:-1]
 
    # Register a possible event
@@ -100,13 +101,13 @@ class NetEvent():
          # Receive and process response
          response = s.recv(1024).decode()
          s.close()
-         return '('+str(host[0])+':'+str(response)+')'
+         return u'('+unicode(host[0])+u':'+unicode(response)+u')'
       except:
          if (subscription == None or host[0] != subscription[0]):
             rmGroups = []
             for key in clients.collection():
                ips = clients.get(key)
-               for i in range(0, len(ips), 1):
+               for i in xrange(0, len(ips), 1):
                   if (ips[i][0] == host[0]):
                      ips.pop(i)
                      if (len(ips) == 0):
@@ -124,8 +125,8 @@ class NetEvent():
          for ip in ipList:
             val = self.publishToHost(ip, data)
             if (val != None):
-               responses.append(val+';')
-      ret = ''
+               responses.append(val+u';')
+      ret = u''
       for response in responses:
          ret += response
       return ret[:-1]
@@ -140,10 +141,10 @@ class NetEvent():
       group = grp
       ip = getIP()
       subscription = host
-      print(host)
+      print host
 
-      nonce = self.publishToHost(host, "AUTH")
-      self.publishToHost(host, "SUBSCRIBE " + ip + " " + str(self.port) + " " + group + " " + auth.encrypt(nonce).decode("utf-8"))
+      nonce = self.publishToHost(host, u"AUTH")
+      self.publishToHost(host, u"SUBSCRIBE " + ip + u" " + unicode(self.port) + u" " + group + u" " + auth.encrypt(nonce).decode(u"utf-8"))
       self.startFaultTolerance()
 
    def getSubscription(self):
@@ -158,51 +159,51 @@ class NetEvent():
    def findController(self):
       global getIP
       ip = getIP()
-      octets = ip.split(".")
+      octets = ip.split(u".")
       testOctet = 0
       found = False
 
-      print("Searching for controller node", end="")
+      print u"Searching for controller node",; sys.stdout.write(u"")
       while (found == False):
          s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
          if (testOctet == 256):
             testOctet = 0
          s.settimeout(10)
-         address = octets[0] + '.' + octets[1] + '.1.' + str(testOctet)
+         address = octets[0] + u'.' + octets[1] + u'.1.' + unicode(testOctet)
          try:
             s.connect((address, 6667))
             s.settimeout(None)
-            s.sendall("ROLE".encode())
+            s.sendall(u"ROLE".encode())
             response = s.recv(1024).decode()
-            if (response == "ADMIN"):
+            if (response == u"ADMIN"):
                found = True
          except socket.error:
-            print(".", end="")
+            print u".",; sys.stdout.write(u"")
          s.close()
          testOctet += 1
 
       if (found == True):
-         print("\nController found at", address)
+         print u"\nController found at", address
          try:
             self.subscribe((address, 6667), self.group)
             return (address, 6667)
          except AttributeError:
-            print("Please associate with a group first!")
+            print u"Please associate with a group first!"
             return -1
       else:
          return -1
 
    def getClientList(self):
       global clients
-      listString = ''
+      listString = u''
       for group in clients:
-         clist = ''
+         clist = u''
          for client in clients[group]:
-            clist += '(' + client[0] + ',' + client[1] + ');'
-         listString += group + ":" + clist
+            clist += u'(' + client[0] + u',' + client[1] + u');'
+         listString += group + u":" + clist
       return listString
 
-class EventHandler(socketserver.BaseRequestHandler):
+class EventHandler(SocketServer.BaseRequestHandler):
    # Handle external requests
    def handle(self):
       global clients
@@ -210,26 +211,26 @@ class EventHandler(socketserver.BaseRequestHandler):
       global role
       global nonce
       self.data = self.request.recv(1024).decode().split()
-      print(self.data)
+      print self.data
       # data[0] -> command
       # data[1] ... data[n] -> args
       if (events.contains(self.data[0])):
          f = events.get(self.data[0])
          params = []
-         for i in range(1, len(self.data), 1):
+         for i in xrange(1, len(self.data), 1):
             params.append(self.data[i])
          response = f(params)
-         self.request.sendall(str(response).encode())
-      elif (self.data[0] == "ROLE"):
+         self.request.sendall(unicode(response).encode())
+      elif (self.data[0] == u"ROLE"):
          self.request.sendall(role.encode())
-      elif (self.data[0] == "AUTH"):
+      elif (self.data[0] == u"AUTH"):
          nonce = auth.generateNonce()
          self.request.sendall(nonce.encode())
-      elif (self.data[0] == "SUBSCRIBE"):
-         r = self.data[4].encode("utf-8")
-         m = auth.decrypt(r).decode("utf-8")[1:-1].split(':')[1]
+      elif (self.data[0] == u"SUBSCRIBE"):
+         r = self.data[4].encode(u"utf-8")
+         m = auth.decrypt(r).decode(u"utf-8")[1:-1].split(u':')[1]
          if (m == nonce):
-            print("Authenticated")
+            print u"Authenticated"
             if (len(self.data) == 5): 
                # The group exists
                if (clients.contains(self.data[3])):
@@ -239,7 +240,7 @@ class EventHandler(socketserver.BaseRequestHandler):
                else:
                   c = [(self.data[1], int(self.data[2]))]
                   clients.append((self.data[3], c))
-      elif (self.data[0] == "ALIVE"):
-         self.request.sendall("Y".encode())
+      elif (self.data[0] == u"ALIVE"):
+         self.request.sendall(u"Y".encode())
 
       self.request.close()
