@@ -59,7 +59,7 @@ class NetEvent():
             resp = self.publishToHost(subscription, "ALIVE")
             if (resp == None):
                alive = False
-         sleep(10)
+         sleep(30)
       print("Controller lost.  Starting search.")
       self.findController()
 
@@ -164,10 +164,10 @@ class NetEvent():
       found = False
 
       print("Searching for controller node", end="")
+      s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
       while (found == False):
          if (testOctet == 256):
             testOctet = 0
-         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
          s.settimeout(10)
          address = octets[0] + '.' + octets[1] + '.1.' + str(testOctet)
          try:
