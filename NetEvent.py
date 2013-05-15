@@ -59,7 +59,7 @@ class NetEvent():
             resp = self.publishToHost(subscription, "ALIVE")
             if (resp == None):
                alive = False
-         sleep(5000)
+         sleep(10)
       print("Controller lost.  Starting search.")
       self.findController()
 
