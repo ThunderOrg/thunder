@@ -2,13 +2,12 @@
 # Developed by Gabriel Jacob Loewen
 # Copyright 2013 Gabriel Jacob Loewen
 
-import socket, SocketServer, threading, auth, time
+import socket, socketserver, threading, auth, time
 from threading import Timer
 from dictionary import *
 from datetime import datetime
 import events as builtinEvents
 from time import sleep
-import sys
 
 # Mapping from event name to function
 events = Dictionary()
@@ -37,9 +36,9 @@ class NetEvent():
       global role
       global group
       role = r
-      self.server = SocketServer.TCPServer((getIP(), port), EventHandler)
+      self.server = socketserver.TCPServer((getIP(), port), EventHandler)
       self.port = self.server.server_address[1]
-      self.server.daemon = True
+      self.server.isDaemon = True
       self.start()
       # Register some data aggregation events for cpu/ram utilization as well as general system info
       self.registerEvent("UTILIZATION", builtinEvents.utilization)
@@ -48,7 +47,6 @@ class NetEvent():
    # Start thread for checking the controller node to ensure that it is still alive.
    def startFaultTolerance(self):
       self.lifeGuardThread = threading.Thread(target = self.lifeGuard)
-      self.lifeGuardThread.daemon = True
       self.lifeGuardThread.start()
 
    def lifeGuard(self):
@@ -56,13 +54,13 @@ class NetEvent():
       global group
       alive = True
       while(alive):
-         print "Checking host status"
+         print("Checking host status")
          if (subscription != None):
             resp = self.publishToHost(subscription, "ALIVE")
             if (resp == None):
                alive = False
          sleep(30)
-      print "Controller lost.  Starting search."
+      print("Controller lost.  Starting search.")
       self.findController()
 
    # Start thread for handling requests
@@ -77,9 +75,9 @@ class NetEvent():
 
    def getClusterList(self):
       global clients
-      ret = u''
+      ret = ''
       for key in clients.collection():
-         ret += key + u';'
+         ret += key + ';'
       return ret[:-1]
 
    # Register a possible event
@@ -102,13 +100,13 @@ class NetEvent():
          # Receive and process response
          response = s.recv(1024).decode()
          s.close()
-         return u'('+unicode(host[0])+u':'+unicode(response)+u')'
+         return '('+str(host[0])+':'+str(response)+')'
       except:
          if (subscription == None or host[0] != subscription[0]):
             rmGroups = []
             for key in clients.collection():
                ips = clients.get(key)
-               for i in xrange(0, len(ips), 1):
+               for i in range(0, len(ips), 1):
                   if (ips[i][0] == host[0]):
                      ips.pop(i)
                      if (len(ips) == 0):
@@ -126,8 +124,8 @@ class NetEvent():
          for ip in ipList:
             val = self.publishToHost(ip, data)
             if (val != None):
-               responses.append(val+u';')
-      ret = u''
+               responses.append(val+';')
+      ret = ''
       for response in responses:
          ret += response
       return ret[:-1]
@@ -142,10 +140,10 @@ class NetEvent():
       group = grp
       ip = getIP()
       subscription = host
-      print host
+      print(host)
 
       nonce = self.publishToHost(host, "AUTH")
-      self.publishToHost(host, "SUBSCRIBE " + ip + " " + unicode(self.port) + " " + group + " " + auth.encrypt(nonce).decode("utf-8"))
+      self.publishToHost(host, "SUBSCRIBE " + ip + " " + str(self.port) + " " + group + " " + auth.encrypt(nonce).decode("utf-8"))
       self.startFaultTolerance()
 
    def getSubscription(self):
@@ -164,13 +162,13 @@ class NetEvent():
       testOctet = 0
       found = False
 
-      print "Searching for controller node",; sys.stdout.write("")
+      print("Searching for controller node", end="")
       while (found == False):
          s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
          if (testOctet == 256):
             testOctet = 0
          s.settimeout(10)
-         address = octets[0] + u'.' + octets[1] + u'.1.' + unicode(testOctet)
+         address = octets[0] + '.' + octets[1] + '.1.' + str(testOctet)
          try:
             s.connect((address, 6667))
             s.settimeout(None)
@@ -179,32 +177,32 @@ class NetEvent():
             if (response == "ADMIN"):
                found = True
          except socket.error:
-            print ".",; sys.stdout.write("")
+            print(".", end="")
          s.close()
          testOctet += 1
 
       if (found == True):
-         print "\nController found at", address
+         print("\nController found at", address)
          try:
             self.subscribe((address, 6667), self.group)
             return (address, 6667)
          except AttributeError:
-            print "Please associate with a group first!"
+            print("Please associate with a group first!")
             return -1
       else:
          return -1
 
    def getClientList(self):
       global clients
-      listString = u''
+      listString = ''
       for group in clients:
-         clist = u''
+         clist = ''
          for client in clients[group]:
-            clist += u'(' + client[0] + u',' + client[1] + u');'
+            clist += '(' + client[0] + ',' + client[1] + ');'
          listString += group + ":" + clist
       return listString
 
-class EventHandler(SocketServer.BaseRequestHandler):
+class EventHandler(socketserver.BaseRequestHandler):
    # Handle external requests
    def handle(self):
       global clients
@@ -212,16 +210,16 @@ class EventHandler(SocketServer.BaseRequestHandler):
       global role
       global nonce
       self.data = self.request.recv(1024).decode().split()
-      print self.data
+      print(self.data)
       # data[0] -> command
       # data[1] ... data[n] -> args
       if (events.contains(self.data[0])):
          f = events.get(self.data[0])
          params = []
-         for i in xrange(1, len(self.data), 1):
+         for i in range(1, len(self.data), 1):
             params.append(self.data[i])
          response = f(params)
-         self.request.sendall(unicode(response).encode())
+         self.request.sendall(str(response).encode())
       elif (self.data[0] == "ROLE"):
          self.request.sendall(role.encode())
       elif (self.data[0] == "AUTH"):
@@ -229,9 +227,9 @@ class EventHandler(SocketServer.BaseRequestHandler):
          self.request.sendall(nonce.encode())
       elif (self.data[0] == "SUBSCRIBE"):
          r = self.data[4].encode("utf-8")
-         m = auth.decrypt(r).decode("utf-8")[1:-1].split(u':')[1]
+         m = auth.decrypt(r).decode("utf-8")[1:-1].split(':')[1]
          if (m == nonce):
-            print "Authenticated"
+            print("Authenticated")
             if (len(self.data) == 5): 
                # The group exists
                if (clients.contains(self.data[3])):
