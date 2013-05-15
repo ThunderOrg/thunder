@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 from NetEvent import *
-import os
-import platform
+import libvirt
 
 def main():
    netEvent = NetEvent()
@@ -11,7 +10,19 @@ def main():
 
 def instantiate(params):
    # Instantiate a virtual machine
-   print("---TODO: Invoke KVM or Xen to instantiate an image---")
-   return 1
+   vmName = params[0]
+   conn = libvirt.open("qemu:///system")
+   if (conn == None):
+      return −1
+
+   try :
+      vm = conn.lookupByName(vmName)
+      vm.create()
+   except:
+      return −1
+
+   # Parse the MAC address from the virtual machine
+   # connection and then use ARP to get the IP address
+   return 1#getIPAddr(vm)
 
 main()
