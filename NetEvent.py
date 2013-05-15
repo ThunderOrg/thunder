@@ -34,6 +34,7 @@ class NetEvent():
    # Constructor, creates the TCP server
    def __init__(self, port = 0, r = "CLIENT"):
       global role
+      global group
       role = r
       self.server = socketserver.TCPServer((getIP(), port), EventHandler)
       self.port = self.server.server_address[1]
@@ -42,8 +43,6 @@ class NetEvent():
       # Register some data aggregation events for cpu/ram utilization as well as general system info
       self.registerEvent("UTILIZATION", builtinEvents.utilization)
       self.registerEvent("SYSINFO", builtinEvents.sysInfo)
-      if (r == "CLIENT"):
-         self.findController()
 
    # Start thread for checking the controller node to ensure that it is still alive.
    def startFaultTolerance(self):

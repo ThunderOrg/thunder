@@ -7,6 +7,7 @@ def main():
    netEvent = NetEvent()
    netEvent.registerEvent("INSTANTIATE", instantiate)
    netEvent.associateGroup("PRIMARY_COMPUTE")
+   netEvent.findController()
 
 def instantiate(params):
    # Instantiate a virtual machine
