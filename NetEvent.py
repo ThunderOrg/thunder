@@ -54,6 +54,7 @@ class NetEvent():
       global group
       alive = True
       while(alive):
+         print("Checking host status")
          if (subscription != None):
             resp = self.publishToHost(subscription, "ALIVE")
             if (resp == None):
@@ -102,7 +103,7 @@ class NetEvent():
          s.close()
          return '('+str(host[0])+':'+str(response)+')'
       except:
-         if (len(subscription) == 0 or host[0] != subscription[0]):
+         if (subscription == None or host[0] != subscription[0]):
             rmGroups = []
             for key in clients.collection():
                ips = clients.get(key)
@@ -139,7 +140,7 @@ class NetEvent():
 
       group = grp
       ip = getIP()
-      self.subscription = host
+      subscription = host
       print(host)
 
       nonce = self.publishToHost(host, "AUTH")
