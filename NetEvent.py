@@ -42,6 +42,8 @@ class NetEvent():
       # Register some data aggregation events for cpu/ram utilization as well as general system info
       self.registerEvent("UTILIZATION", builtinEvents.utilization)
       self.registerEvent("SYSINFO", builtinEvents.sysInfo)
+      if (r == "CLIENT"):
+         self.findController()
 
    # Start thread for checking the controller node to ensure that it is still alive.
    def startFaultTolerance(self):
@@ -58,8 +60,8 @@ class NetEvent():
             if (resp == None):
                alive = False
          sleep(5000)
-      controller = self.findController()
-      self.subscribe(controller, group)
+      print("Controller lost.  Starting search.")
+      self.findController()
 
    # Start thread for handling requests
    def start(self):
