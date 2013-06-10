@@ -2,11 +2,10 @@
 # Developed by Gabriel Jacob Loewen
 # Copyright 2013 Gabriel Jacob Loewen
 
-import socket, socketserver, threading, auth, time
+import socket, socketserver, threading, auth, time, events as builtinEvents
 from threading import Timer
 from dictionary import *
 from datetime import datetime
-import events as builtinEvents
 from time import sleep
 
 # Mapping from event name to function
@@ -44,6 +43,32 @@ class NetEvent():
       self.registerEvent("UTILIZATION", builtinEvents.utilization)
       self.registerEvent("SYSINFO", builtinEvents.sysInfo)
 
+   # Retrieve a semicolon delimeted list of clusters
+   def getClusterList(self):
+      global clients
+      ret = ''
+      for cluster in clients.collection():
+         ret += cluster + ';'
+      return ret[:-1]
+
+   # Retrieve the current subscription
+   def getSubscription(self):
+      try:
+         return self.subscription
+      except AttributeError:
+         return -1
+
+   # Retrieve a colon delimeted list of clients
+   def getClientList(self):
+      global clients
+      listString = ''
+      for group in clients:
+         clist = ''
+         for client in clients[group]:
+            clist += '(' + client[0] + ',' + client[1] + ');'
+         listString += group + ":" + clist
+      return listString
+
    # Start thread for checking the controller node to ensure that it is still alive.
    def startFaultTolerance(self):
       self.lifeGuardThread = threading.Thread(target = self.lifeGuard)
@@ -73,13 +98,6 @@ class NetEvent():
       while 1:
          self.server.handle_request()
 
-   def getClusterList(self):
-      global clients
-      ret = ''
-      for key in clients.collection():
-         ret += key + ';'
-      return ret[:-1]
-
    # Register a possible event
    # Name - name of event used as a key
    # Event - function identifier bound to the event name
@@ -106,11 +124,13 @@ class NetEvent():
             rmGroups = []
             for key in clients.collection():
                ips = clients.get(key)
-               for i in range(0, len(ips), 1):
+               i = 0
+               while (i<len(ips)):
                   if (ips[i][0] == host[0]):
                      ips.pop(i)
                      if (len(ips) == 0):
                         rmGroups.append(key)
+                  i+=1
             for grp in rmGroups:
                clients.remove(grp)
          return None
@@ -145,12 +165,6 @@ class NetEvent():
       nonce = self.publishToHost(host, "AUTH")
       self.publishToHost(host, "SUBSCRIBE " + ip + " " + str(self.port) + " " + group + " " + auth.encrypt(nonce).decode("utf-8"))
       self.startFaultTolerance()
-
-   def getSubscription(self):
-      try:
-         return self.subscription
-      except AttributeError:
-         return -1
 
    def associateGroup(self, group):
       self.group=group
@@ -192,15 +206,6 @@ class NetEvent():
       else:
          return -1
 
-   def getClientList(self):
-      global clients
-      listString = ''
-      for group in clients:
-         clist = ''
-         for client in clients[group]:
-            clist += '(' + client[0] + ',' + client[1] + ');'
-         listString += group + ":" + clist
-      return listString
 
 class EventHandler(socketserver.BaseRequestHandler):
    # Handle external requests
