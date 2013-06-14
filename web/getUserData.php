@@ -8,6 +8,7 @@
    $user = $_GET['uname'];
    $fname = $authorization->SaveUser($user);
    session_start();
+   $_SESSION['mode'] = "file";
    $_SESSION['dat_file'] = $fname;
    $authorization->Redirect("admin.php");
 ?>

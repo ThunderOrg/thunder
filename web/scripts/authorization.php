@@ -81,14 +81,17 @@ class Authorization {
          $this->HandleError("Database login failed!");
          return array();
       }
-      $sql = "select username from user;";
+      $sql = "select username from user";
       $res = mysql_query($sql, $this->connection);
       if (!$res || mysql_num_rows($res) <= 0) {
          $this->HandleError("The username or password are incorrect");
+         mysql_free_result($res);
          return array();
       } else {
-         $vals = mysql_fetch_array($res);
-         return $vals;
+         $names=array();
+         while ($row = mysql_fetch_row($res)) $names[]=$row[0];
+         mysql_free_result($res);
+         return $names;
       }
    }
  
@@ -101,9 +104,11 @@ class Authorization {
       $res = mysql_query($sql, $this->connection);
       if (!$res || mysql_num_rows($res) <= 0) {
          $this->HandleError("The username or password are incorrect");
+         mysql_free_result($res);
          return false;
       } else {
          $vals = mysql_fetch_assoc($res);
+         mysql_free_result($res);
          return $vals['fname'] . ' ' . $vals['lname'];
       }
  
@@ -142,7 +147,16 @@ class Authorization {
       }
       mysql_query($sql, $this->connection);
    }
-   
+
+   function AddUser($user, $fname, $lname, $role, $pass) {
+      if (!$this->DBLogin()) {
+         $this->HandleError("Database login failed!");
+         return false;
+      }
+      $sql = "insert into user (username, fname, lname, role, password) values('$user', '$fname', '$lname', '$role', '$pass')";
+      mysql_query($sql, $this->connection);
+   }
+  
    function DeleteUser($user) {
       if (!$this->DBLogin()) {
          $this->HandleError("Database login failed!");
@@ -167,11 +181,13 @@ class Authorization {
 
       if (!$res || mysql_num_rows($res) <= 0) {
          $this->HandleError("The username or password are incorrect");
+         mysql_free_result($res);
          return false;
       } else {
          $vals = mysql_fetch_assoc($res);
          $_SESSION['role'] = $vals['role'];
          $_SESSION['name'] = $vals['fname'].' '.$vals['lname'];
+         mysql_free_result($res);
       }
       return true;
    }
@@ -249,12 +265,13 @@ class Authorization {
       $res = mysql_query($sql, $this->connection);
 
       $vals = mysql_fetch_assoc($res);
-      $contents .= "readonly:Username:" . $vals['username'] . ";text:First_Name:" . $vals['fname'] . ";text:Last_Name:" . $vals['lname'] . ";text:Role:" . $vals['role'] . ";password:Password:";
-      file_put_contents($file, $this->GenerateForm($contents));
+      $contents .= "readonly:Username:" . $vals['username'] . ";text:First_Name:" . $vals['fname'] . ";text:Last_Name:" . $vals['lname'] . ";role:Role:" . $vals['role'] . ";password:Password:";
+      file_put_contents($file, $this->GenerateForm($contents, $vals['role']));
+      mysql_free_result($res);
       return $file;
    }
 
-   function GenerateForm($text) {
+   function GenerateForm($text, $role) {
       $entries = explode(';', $text);
       $data = "<div class=\"nodeinfo\"><form action=\"modifyuser.php\" method=\"POST\"><table>";
       for ($i=0;$i<count($entries);$i++) {
@@ -265,11 +282,42 @@ class Authorization {
          $value = $entry[2];
          if ($type == "readonly") {
             $data .= "<tr><td>$label</td><td><strong>$value</strong></td></tr><input type=\"hidden\" name=\"$name\" value=\"$value\">";
+         } else if ($type == "role") {
+            $data .= "<tr><td><label for=\"$name\">$label</label></td><td><select name=\"$name\" style=\"width:100%;\">";
+            if ($role == "ADMIN") {
+               $data .= "<option value=\"ADMIN\" selected>Admin</option>"; 
+               $data .= "<option value=\"INSTRUCTOR\">Instructor</option>"; 
+               $data .= "<option value=\"STUDENT\">Student</option>"; 
+            } else if ($role == "INSTRUCTOR") {
+               $data .= "<option value=\"ADMIN\">Admin</option>"; 
+               $data .= "<option value=\"INSTRUCTOR\" selected>Instructor</option>"; 
+               $data .= "<option value=\"STUDENT\">Student</option>"; 
+            } else {
+               $data .= "<option value=\"ADMIN\">Admin</option>"; 
+               $data .= "<option value=\"INSTRUCTOR\">Instructor</option>"; 
+               $data .= "<option value=\"STUDENT\" selected>Student</option>"; 
+            }
+            $data .= "</option></td></tr>";
          } else {
             $data .= "<tr><td><label for=\"$name\">$label</label></td><td><input type=\"$type\" name=\"$name\" value=\"$value\"><br /></td></tr>";
          }
       }
       $data .= "</table><input class=\"floatright\" type=\"submit\" name=\"delete\" value=\"Delete\"><input class=\"floatright\" type=\"submit\" name=\"save\" value=\"Save\"><br /></form></div>";
+      return $data;
+   }
+
+   function GenerateAddForm() {
+      $data = "<div class=\"nodeinfo\"><form action=\"modifyuser.php\" method=\"POST\"><table>";
+      $data .= "<tr><td><label for=\"Username\">Username</label></td><td><input type=\"text\" name=\"Username\" required><br /></td></tr>";
+      $data .= "<tr><td><label for=\"First_Name\">First Name</label></td><td><input type=\"text\" name=\"First_Name\" required><br /></td></tr>";
+      $data .= "<tr><td><label for=\"Last_Name\">Last_Name</label></td><td><input type=\"text\" name=\"Last_Name\" required><br /></td></tr>";
+      $data .= "<tr><td><label for=\"Role\">Role</label></td><td><select name=\"Role\" style=\"width=100%;\">";
+      $data .= "<option value=\"ADMIN\">Admin</option>"; 
+      $data .= "<option value=\"INSTRUCTOR\">Instructor</option>"; 
+      $data .= "<option value=\"STUDENT\" selected>Student</option>"; 
+      $data .= "</option></td></tr>";
+      $data .= "<tr><td><label for=\"Password\">Password</label></td><td><input type=\"password\" name=\"Password\" required><br /></td></tr>";
+      $data .= "</table><input class=\"floatright\" type=\"submit\" name=\"add\" value=\"Add\"><br /></form></div>";
       return $data;
    }
 

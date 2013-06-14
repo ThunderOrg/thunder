@@ -1,0 +1,1 @@
+<div class="nodeinfo"><form action="modifyuser.php" method="POST"><table><tr><td><label for=""></label></td><td><input type="" name="" value=""><br /></td></tr></table><input class="floatright" type="submit" name="delete" value="Delete"><input class="floatright" type="submit" name="save" value="Save"><br /></form></div>

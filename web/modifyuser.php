@@ -7,7 +7,7 @@
    $button = "";
    foreach ($_POST as $entry) {
       if (isset($entry)) {
-         if ($entry == "Delete" || $entry == "Save") {
+         if ($entry == "Delete" || $entry == "Save" || $entry == "Add") {
             $button = $entry;
          }
       }
@@ -26,7 +26,12 @@
       $authorization->UpdateUser($username, $fname, $lname, $role, $pass);
    } else if ($button == "Delete") {
       // Delete user
-      $authorization->DeleteUser($username);
+      if ($username != "admin") {
+         $authorization->DeleteUser($username);
+      }
+   } else if ($button == "Add") {
+      // Add user
+      $authorization->AddUser($username, $fname, $lname, $role, $pass);
    }
    $authorization->Redirect("admin.php");
 ?>
