@@ -13,9 +13,10 @@
 <link rel="stylesheet" href="css/thunder.css"></link>
 </head>
 <body>
-<div id="header"><div id="rightHeader"><a class="menuitem" href="logout.php"><?php echo $authorization->GetName(); ?></a></div></div>
+<div id="header"><div id="rightHeader"><a class="menuitem" href="logout.php">Logout</a></div></div>
 <div id="leftMenu">
    <div>
+   <a id="homeButton" href="<?php $authorization->GetSelfScript(); ?>">Home</a>
    <details open="open">
       <summary>Manage</summary>
       <div style="margin-left: 10px;">  
@@ -63,16 +64,27 @@
 <div id="adminContent">
   <?php
      session_start();
-     if (isset($_SESSION['dat_file'])) {
-        $file = $_SESSION['dat_file'];
+     if (isset($_SESSION['mode'])) {
         if ($_SESSION['mode'] == "file") {
-           echo file_get_contents($file);
+           if (isset($_SESSION['dat_file'])) {
+              $file = $_SESSION['dat_file'];
+              echo file_get_contents($file);
+           }
         } else if ($_SESSION['mode'] == "data") {
            echo $_SESSION['data'];
         }
+        unset($_SESSION['mode']);
+        $_SESSION['mode'] = NULL;
+        unset($_SESSION['dat_file']);
+        $_SESSION['dat_file'] = NULL;
+        unset($_SESSION['data']);
+        $_SESSION['data'] = NULL;
+     } else {
+	echo "<p id=\"logo\">Thunder</p>";
+	echo "<p class=\"sublogo\">Management Console</p><br />";
      }
   ?>
 </div>
-<p id="corner">Revision 2</p>
+<p id="corner"><?php echo $authorization->GetName(); ?></p>
 </body>
 </html>

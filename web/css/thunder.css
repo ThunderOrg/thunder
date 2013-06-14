@@ -41,6 +41,16 @@ li {
 	padding: 3px;
 }
 
+#homeButton {
+	color: #000;
+	margin-top: 10px;
+	margin-bottom: 10px;
+	display: block;
+	text-align: center;
+	border-bottom: 1px solid #000;
+	width: 95%;
+}
+
 .floatright {
 	display:inline-block;
 	float:right;

@@ -118,11 +118,25 @@ class Authorization {
       header("Location: $url");
       exit;
    }
-   
+  
+   function deleteDirectory($dir) { 
+      if (!file_exists($dir)) return true; 
+      if (!is_dir($dir) || is_link($dir)) return unlink($dir); 
+         foreach (scandir($dir) as $item) { 
+            if ($item == '.' || $item == '..') continue; 
+            if (!$this->deleteDirectory($dir . "/" . $item)) { 
+                chmod($dir . "/" . $item, 0777); 
+                if (!$this->deleteDirectory($dir . "/" . $item)) return false; 
+            } 
+         } 
+      return rmdir($dir); 
+   } 
+ 
    function Logout() {
       if (!isset($_SESSION)) {
          session_start();
       }
+      $this->deleteDirectory("data/" . $_SESSION['uuid']);
       $_SESSION['uuid']=NULL;
       unset($_SESSION['uuid']);
       $_SESSION['username']=NULL;
@@ -311,7 +325,7 @@ class Authorization {
       $data .= "<tr><td><label for=\"Username\">Username</label></td><td><input type=\"text\" name=\"Username\" required><br /></td></tr>";
       $data .= "<tr><td><label for=\"First_Name\">First Name</label></td><td><input type=\"text\" name=\"First_Name\" required><br /></td></tr>";
       $data .= "<tr><td><label for=\"Last_Name\">Last_Name</label></td><td><input type=\"text\" name=\"Last_Name\" required><br /></td></tr>";
-      $data .= "<tr><td><label for=\"Role\">Role</label></td><td><select name=\"Role\" style=\"width=100%;\">";
+      $data .= "<tr><td><label for=\"Role\">Role</label></td><td><select name=\"Role\" style=\"width:100%;\">";
       $data .= "<option value=\"ADMIN\">Admin</option>"; 
       $data .= "<option value=\"INSTRUCTOR\">Instructor</option>"; 
       $data .= "<option value=\"STUDENT\" selected>Student</option>"; 
