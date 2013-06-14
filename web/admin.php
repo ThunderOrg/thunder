@@ -1,5 +1,5 @@
 <?php
-   require_once("scripts/CARECloud.php");
+   require_once("scripts/thunder.php");
    if (!$authorization->CheckLogin() || $authorization->GetRole() != "ADMIN") {
       $authorization->Redirect("index.php");
       exit;
@@ -9,8 +9,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>UA Care - Education Cloud</title>
-<link rel="stylesheet" href="css/uacare.css"></link>
+<title>Thunder - Education Cloud</title>
+<link rel="stylesheet" href="css/thunder.css"></link>
 </head>
 <body>
 <div id="header"><div id="rightHeader"><a class="menuitem" href="logout.php"><?php echo $authorization->GetName(); ?></a></div></div>
@@ -19,7 +19,7 @@
    <details open="open">
       <summary>Manage</summary>
       <div style="margin-left: 10px;">  
-      <details>
+      <details open="open">
          <summary>Clusters</summary>
          <ul>
 	      <?php
@@ -28,21 +28,33 @@
 		    echo "<li>No clusters found</li>";
 		 } else {
 		    for ($i=0;$i<count($cluster);$i = $i +1) {
-		       echo "<li><a href=\"getClusterData.php?cname=".$cluster[$i]."\">".$cluster[$i]."</a></li>";
+		       echo "<li><a href=\"getClusterData.php?cname=".$cluster[$i]."\">".ucwords(strtolower(str_replace("_"," ",$cluster[$i])))."</a></li>";
 		    }
 		 }
 	      ?>
          </ul>
       </details>
-      <details>
+      <details open="open">
          <summary>Users</summary>
+          <ul>
+	      <?php
+		 $users = $authorization->getUserList();
+		 if (count($users)==1) {
+		    echo "<li>No users found</li>";
+		 } else {
+		    for ($i=0;$i<count($users)-1;$i = $i +1) {
+		       echo "<li><a href=\"getUserData.php?uname=".$users[$i]."\">".$authorization->getFullName($users[$i])."</a></li>";
+		    }
+		 }
+	      ?>
+         </ul>
       </details>
-      <details>
+      <details open="open">
          <summary>Images</summary>
       </details>
       </div>
    </details> <br />
-   <details>
+   <details open="open">
       <summary>Tools</summary>
    </details>
    </div>

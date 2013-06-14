@@ -11,7 +11,7 @@ class Authorization {
    var $role;
 
    function Authorization() {
-      $this->site_name = "CARE Cloud";
+      $this->site_name = "Thunder Cloud";
    }
 
    function InitDB($host, $uname, $pwd, $db, $table) {
@@ -76,6 +76,39 @@ class Authorization {
       return $ret;
    }
 
+   function getUserList() {
+      if (!$this->DBLogin()) {
+         $this->HandleError("Database login failed!");
+         return array();
+      }
+      $sql = "select username from user;";
+      $res = mysql_query($sql, $this->connection);
+      if (!$res || mysql_num_rows($res) <= 0) {
+         $this->HandleError("The username or password are incorrect");
+         return array();
+      } else {
+         $vals = mysql_fetch_array($res);
+         return $vals;
+      }
+   }
+ 
+   function getFullName($username) {
+      if (!$this->DBLogin()) {
+         $this->HandleError("Database login failed!");
+         return false;
+      }
+      $sql = "select fname, lname from user where username='$username'";
+      $res = mysql_query($sql, $this->connection);
+      if (!$res || mysql_num_rows($res) <= 0) {
+         $this->HandleError("The username or password are incorrect");
+         return false;
+      } else {
+         $vals = mysql_fetch_assoc($res);
+         return $vals['fname'] . ' ' . $vals['lname'];
+      }
+ 
+   }
+
    function Redirect($url) {
       header("Location: $url");
       exit;
@@ -95,7 +128,30 @@ class Authorization {
       unset($_SESSION['name']);
       header("Location: index.php");
    }
+
+   function UpdateUser($user, $fname, $lname, $role, $pass) {
+      if (!$this->DBLogin()) {
+         $this->HandleError("Database login failed!");
+         return false;
+      }
+      $sql = "";
+      if ($pass == "") {
+         $sql = "update user set fname='$fname', lname='$lname', role='$role' where username='$user'";
+      } else {
+         $sql = "update user set fname='$fname', lname='$lname', role='$role' password='$pass' where username='$user'";
+      }
+      mysql_query($sql, $this->connection);
+   }
    
+   function DeleteUser($user) {
+      if (!$this->DBLogin()) {
+         $this->HandleError("Database login failed!");
+         return false;
+      }
+      $sql = "delete from user where username='$user'";
+      mysql_query($sql, $this->connection);
+   }
+
    function CheckLoginInDB($username, $passhash) {
       if (!isset($_SESSION)) {
          session_start();
@@ -174,6 +230,47 @@ class Authorization {
          $str = stripslashes($str);
       }
       return $str;
+   }
+
+   function SaveUser($user) {
+      if (!$this->DBLogin()) {
+         $this->HandleError("Database login failed!");
+         return false;
+      }
+      session_start();
+      $date = new DateTime();
+      if (!file_exists('data/' . $_SESSION['uuid'] . '/')) {
+         mkdir('data/' . $_SESSION['uuid'] . '/', 0755, true);
+      }
+      $file = "data/" . $_SESSION['uuid'] . "/" . $user . $date->getTimeStamp() . ".dat";
+      $contents = "";
+
+      $sql = "select * from user where username='$user'";
+      $res = mysql_query($sql, $this->connection);
+
+      $vals = mysql_fetch_assoc($res);
+      $contents .= "readonly:Username:" . $vals['username'] . ";text:First_Name:" . $vals['fname'] . ";text:Last_Name:" . $vals['lname'] . ";text:Role:" . $vals['role'] . ";password:Password:";
+      file_put_contents($file, $this->GenerateForm($contents));
+      return $file;
+   }
+
+   function GenerateForm($text) {
+      $entries = explode(';', $text);
+      $data = "<div class=\"nodeinfo\"><form action=\"modifyuser.php\" method=\"POST\"><table>";
+      for ($i=0;$i<count($entries);$i++) {
+         $entry = explode(':',$entries[$i]);
+         $type = $entry[0];
+         $name = $entry[1];
+         $label = str_replace('_',' ',$entry[1]);
+         $value = $entry[2];
+         if ($type == "readonly") {
+            $data .= "<tr><td>$label</td><td><strong>$value</strong></td></tr><input type=\"hidden\" name=\"$name\" value=\"$value\">";
+         } else {
+            $data .= "<tr><td><label for=\"$name\">$label</label></td><td><input type=\"$type\" name=\"$name\" value=\"$value\"><br /></td></tr>";
+         }
+      }
+      $data .= "</table><input class=\"floatright\" type=\"submit\" name=\"delete\" value=\"Delete\"><input class=\"floatright\" type=\"submit\" name=\"save\" value=\"Save\"><br /></form></div>";
+      return $data;
    }
 
    function GetSelfScript() {

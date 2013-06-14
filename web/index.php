@@ -1,5 +1,5 @@
 <?php
-   require_once("scripts/CARECloud.php");
+   require_once("scripts/thunder.php");
    if (isset($_POST['submitted'])) {
       if ($authorization->Login()) {
          if ($authorization->GetRole() == 'ADMIN') {
@@ -24,15 +24,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>UA Care - Education Cloud</title>
-<link rel="stylesheet" href="css/uacare.css"></link>
+<title>Thunder - Education Cloud</title>
+<link rel="stylesheet" href="css/thunder.css"></link>
 </head>
 <body>
 <div id="header"></div>
 <div id = "vcontainer">
-	<p id="logo">UA CARE</p>
+	<p id="logo">Thunder</p>
 	<p class="sublogo">Education Cloud</p><br />
 	<img id="sep" src="./images/line.png" />
+        <div id="loginborder">
 	<form class="form-container" action="<?php echo $authorization->GetSelfScript(); ?>" method="post" accept-charset="UTF-8">
                 <input type='hidden' name='submitted' id='submitted' value='1' />
 		<label for="username">Username</label>
@@ -43,6 +44,7 @@
 		<input class="submit-button" type="submit" value="Login" />
 	</form>
         <?php echo "<p align=\"left\">".$authorization->GetErrorMessage()."</p>"; $authorization->ClearError()?>
+        </div>
 </div>
 <p id="corner">Revision 2</p>
 </body>

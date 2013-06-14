@@ -1,4 +1,4 @@
 <?php
-   require_once("scripts/CARECloud.php");
+   require_once("scripts/thunder.php");
    $authorization->Logout();
 ?>

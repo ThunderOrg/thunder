@@ -1,0 +1,1 @@
+<form action="modifyuser.php" method="POST"><label for="d">d</label><input type="E" name="d" value="i"><br /></form>

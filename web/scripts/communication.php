@@ -45,14 +45,18 @@
          $response = $this->receive();
          $this->close();
          if ($response == '') {return array();}
-         return explode('\;',$response);
+         return explode(';',$response);
       }
 
       function SaveStats($group) {
+         session_start();
          $date = new DateTime();
          $sysinfo = $this->getSysInfo($group);
          $utilization = $this->getUtilization($group);
-         $file = "data/" . $group . $date->getTimeStamp() . ".dat";
+         if (!file_exists('data/' . $_SESSION['uuid'] . '/')) {
+            mkdir('data/' . $_SESSION['uuid'] . '/', 0755, true);
+         }
+	 $file = "data/" . $_SESSION['uuid'] . "/" . $group . $date->getTimeStamp() . ".dat";
          $contents = "";
          for ($i=0;$i<count($sysinfo);$i++) {
             $sysvalue = $sysinfo[$i];
@@ -61,7 +65,7 @@
             $utilitems = explode(':', substr($utilvalue, 1, -1));
             $contents .= "<div class=\"nodeinfo\"><h2>Node " . ($i+1) . "</h2><br>";
             $contents .= "IP Address: " . $sysitems[0] . "<br>Operating system: " . $sysitems[1] . "<br>Kernel: " . $sysitems[2] . "<br><br>";
-            $contents .= "Total RAM: " . $utilitems[1] . "<br>Free RAM: " . $utilitems[2] . "<br>Load AVG: " . $utilitems[3] . "," . $utilitems[4] . "," . $utilitems[5] . "</div>";
+            $contents .= "Total RAM: <strong>" . round($utilitems[1] / 1024) . "</strong> MB<br>Free RAM: <strong>" . round($utilitems[2] / 1024) . "</strong> MB<br>Load AVG: <strong>" . $utilitems[3] . "</strong> (1 min), <strong>" . $utilitems[4] . "</strong> (5 min), <strong>" . $utilitems[5] . "</strong> (15 min)</div>";
          }
          file_put_contents($file, $contents);
          return $file;

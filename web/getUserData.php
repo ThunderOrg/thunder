@@ -5,8 +5,8 @@
       exit;
    }
 
-   $cluster = $_GET['cname'];
-   $fname = $comm->SaveStats($cluster);
+   $user = $_GET['uname'];
+   $fname = $authorization->SaveUser($user);
    session_start();
    $_SESSION['dat_file'] = $fname;
    $authorization->Redirect("admin.php");
