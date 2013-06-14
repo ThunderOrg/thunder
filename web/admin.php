@@ -39,14 +39,15 @@
           <ul>
 	      <?php
 		 $users = $authorization->getUserList();
-		 if (count($users)==1) {
+		 if (count($users)==0) {
 		    echo "<li>No users found</li>";
 		 } else {
-		    for ($i=0;$i<count($users)-1;$i = $i +1) {
+		    for ($i=0;$i<count($users);$i++) {
 		       echo "<li><a href=\"getUserData.php?uname=".$users[$i]."\">".$authorization->getFullName($users[$i])."</a></li>";
 		    }
 		 }
 	      ?>
+              <li><a href="genAddUser.php">Add New User</a></li>
          </ul>
       </details>
       <details open="open">
@@ -64,7 +65,11 @@
      session_start();
      if (isset($_SESSION['dat_file'])) {
         $file = $_SESSION['dat_file'];
-        echo file_get_contents($file);
+        if ($_SESSION['mode'] == "file") {
+           echo file_get_contents($file);
+        } else if ($_SESSION['mode'] == "data") {
+           echo $_SESSION['data'];
+        }
      }
   ?>
 </div>

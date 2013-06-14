@@ -5,10 +5,9 @@
       exit;
    }
 
-   $cluster = $_GET['cname'];
-   $fname = $comm->SaveStats($cluster);
+   $data = $authorization->GenerateAddForm();
    session_start();
-   $_SESSION['mode'] = "file";
-   $_SESSION['dat_file'] = $fname;
+   $_SESSION['mode'] = "data";
+   $_SESSION['data'] = $data;
    $authorization->Redirect("admin.php");
 ?>
