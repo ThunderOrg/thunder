@@ -8,6 +8,9 @@ from dictionary import *
 from datetime import datetime
 from time import sleep
 
+# Enable debugging output
+debug = True
+
 # Mapping from event name to function
 events = Dictionary()
 
@@ -27,6 +30,11 @@ group = ""
 def getIP():
    return socket.gethostbyname(socket.gethostname())
 
+def printDebug(text):
+   global debug
+   if (debug):
+      print(text)
+
 # Main class for NetEvent
 class NetEvent():
 
@@ -35,6 +43,7 @@ class NetEvent():
       global role
       global group
       role = r
+      printDebug(getIP())
       self.server = socketserver.TCPServer((getIP(), port), EventHandler)
       self.port = self.server.server_address[1]
       self.server.isDaemon = True
@@ -79,13 +88,13 @@ class NetEvent():
       global group
       alive = True
       while(alive):
-         print("Checking host status")
+         printDebug("Checking host status")
          if (subscription != None):
             resp = self.publishToHost(subscription, "ALIVE")
             if (resp == None):
                alive = False
-         sleep(30)
-      print("Controller lost.  Starting search.")
+         sleep(300)
+      printDebug("Controller lost.  Starting search.")
       self.findController()
 
    # Start thread for handling requests
@@ -160,7 +169,7 @@ class NetEvent():
       group = grp
       ip = getIP()
       subscription = host
-      print(host)
+      printDebug(host)
 
       nonce = self.publishToHost(host, "AUTH")
       self.publishToHost(host, "SUBSCRIBE " + ip + " " + str(self.port) + " " + group + " " + auth.encrypt(nonce).decode("utf-8"))
@@ -176,7 +185,7 @@ class NetEvent():
       testOctet = 0
       found = False
 
-      print("Searching for controller node", end="")
+      printDebug("Searching for controller node", end="")
       while (found == False):
          s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
          if (testOctet == 256):
@@ -191,21 +200,20 @@ class NetEvent():
             if (response == "ADMIN"):
                found = True
          except socket.error:
-            print(".", end="")
+            printDebug(".", end="")
          s.close()
          testOctet += 1
 
       if (found == True):
-         print("\nController found at", address)
+         printDebug("\nController found at", address)
          try:
             self.subscribe((address, 6667), self.group)
             return (address, 6667)
          except AttributeError:
-            print("Please associate with a group first!")
+            printDebug("Please associate with a group first!")
             return -1
       else:
          return -1
-
 
 class EventHandler(socketserver.BaseRequestHandler):
    # Handle external requests
@@ -215,7 +223,7 @@ class EventHandler(socketserver.BaseRequestHandler):
       global role
       global nonce
       self.data = self.request.recv(1024).decode().split()
-      print(self.data)
+      printDebug(self.data)
       # data[0] -> command
       # data[1] ... data[n] -> args
       if (events.contains(self.data[0])):
@@ -234,7 +242,7 @@ class EventHandler(socketserver.BaseRequestHandler):
          r = self.data[4].encode("utf-8")
          m = auth.decrypt(r).decode("utf-8")[1:-1].split(':')[1]
          if (m == nonce):
-            print("Authenticated")
+            printDebug("Authenticated")
             if (len(self.data) == 5): 
                # The group exists
                if (clients.contains(self.data[3])):
