@@ -1,2 +1,0 @@
-<form action="modifyuser.php" method="POST"><label for="First_Name">First Name</label><input type="text" name="First_Name" value="Gabriel
-text"><br /></form>
