@@ -30,10 +30,10 @@ group = ""
 def getIP():
    return socket.gethostbyname(socket.gethostname())
 
-def printDebug(text):
+def printDebug(*args):
    global debug
    if (debug):
-      print(text)
+      print(args)
 
 # Main class for NetEvent
 class NetEvent():
