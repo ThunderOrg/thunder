@@ -27,7 +27,7 @@
          $response = $this->receive();
          $this->close();
          if ($response == '') {return array();}
-         return explode('\;',$response);
+         return explode(';',$response);
       }
 
       function getUtilization($group) {
@@ -36,7 +36,7 @@
          $response = $this->receive();
          $this->close();
          if ($response == '') {return array();}
-         return explode('\;',$response);
+         return explode(';',$response);
       }
 
       function getClusterList() {
