@@ -4,6 +4,10 @@ from NetEvent import *
 def main():
    netEvent = NetEvent()
    netEvent.associateGroup("PRIMARY_STORAGE")
+   netEvent.registerEvent("GETIMAGESINFO", getImagesInfo)
    netEvent.findController()
+
+def getImagesInfo(params):
+   
 
 main()
