@@ -28,7 +28,12 @@ group = ""
 
 # Retreive the private IP of this system
 def getIP():
-   return socket.gethostbyname(socket.gethostname())
+   s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+   s.connect(("google.com",80))
+   ip = s.getsockname()[0]
+   s.close();
+   return ip
+   #return socket.gethostbyname(socket.gethostname())
 
 # Main class for NetEvent
 class NetEvent():
