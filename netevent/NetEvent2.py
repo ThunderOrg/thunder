@@ -4,10 +4,11 @@
 # Cloud and Cluster Computer Lab
 # Copyright 2014 Gabriel Jacob Loewen
 
-import threading, socket, socketserver, sys, subprocess, events as builtinEvents
+import re, threading, socket, socketserver, sys, subprocess, events as builtinEvents
 from dictionary import *
 from websocket import *
-
+from time import sleep
+import struct
 socketserver.TCPServer.allow_reuse_address = True
 
 class NetEvent(threading.Thread):
@@ -23,7 +24,6 @@ class NetEvent(threading.Thread):
 
      # get the IP address of the system
      self.IP = self.getIP(interface)
-     print("Binding to IP address", self.IP)
 
      # create a TCP server, and bind it to the address of the desired interface
      self.server = socketserver.TCPServer((self.IP, port), self.NetEventServer)
@@ -31,6 +31,7 @@ class NetEvent(threading.Thread):
 
      # workaround for getting the port number for auto-assigned ports (default behavior for clients)
      self.port = self.server.server_address[1]
+     print("Binding to IP address - ", self.IP,":",port, sep='')
 
      # create some dictionaries to hold pointers to events and client data
      self.events = Dictionary()
@@ -50,12 +51,12 @@ class NetEvent(threading.Thread):
   # get the IP of the desired networking interface
   def getIP(self, interface):
      p = subprocess.Popen(['/sbin/ifconfig', interface.strip()], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-     ifconfig = p.communicate()[0]
-     if (ifconfig):
-        data = ifconfig.decode().split("\n\t")
-        for item in data:
-           if (str(item).startswith('inet ')):
-              return item.split()[1]
+     ifconfig = p.communicate()[0].decode().strip().splitlines()
+     for line in ifconfig:
+        lineArr = line.strip().split()
+        if (lineArr[0] == 'inet'):
+           return lineArr[1].split(':')[1]
+
      return '127.0.0.1'
 
   # get the MAC address of the desired networking interface
@@ -84,41 +85,49 @@ class NetEvent(threading.Thread):
   # Handler class for handling incoming connections
   class NetEventServer(socketserver.BaseRequestHandler):
      def handle(self):
+        self.request.setblocking(1)
         self.container = self.server._NetEventInstance
         self.data = self.request.recv(1024)
+        print(self.data.decode('UTF-8'))
         websock = websocket(self.request)
-	wsRequest = False
-	decodedData = ''
-	
-	# Check to see if the data is coming over a websocket connection (cloud interface)
-	# Get the decoded data
-	if (websock.isHandshakePending(self.data)):
-	   response = websock.handshake(self.data)
-	   self.request.send(response)
-	   decodedData = websock.decode()
-	   wsRequest = True
-	   if (not decodedData):
-	      self.request.close()
-	      return
-	   # Else, it could be coming from a peer (cloud server)
-           else:
-              decodedData = self.data.decode('UTF8')
-		   
-              print(decodedData)
+        wsRequest = False
+        decodedData = ''
 
-              # Send back a response
-              if (wsRequest):
-	         # Tell the server to terminate
-                 self.request.send(websock.encode(Opcode.terminate,''))
+        # Check to see if the data is coming over a websocket connection (cloud interface)
+        # Get the decoded data
+        if (websock.isHandshakePending(self.data)):
+           print("Accepting websocket handshake")
+           handshake = websock.handshake(self.data)
+           self.request.send(handshake)
+           #d = self.request.recv(1024)
+           #print(d)
+           #d2 = websock.encode(Opcode.text, "Hello!")
+           #self.request.send(d2)
+           #print("Sent response")
+           #decodedData = websock.decode()
+           #wsRequest = True
+           #if (not decodedData):
+           #   self.request.close()
+           #   return
+        # Else, it could be coming from a peer (cloud server)
+        else:
+           decodedData = self.data.decode('UTF-8')
 
-      self.request.close()
+        print(decodedData)
+
+        # Send back a response
+        #if (wsRequest):
+           # Tell the server to terminate
+        #   self.request.send(websock.encode(Opcode.terminate,''))
+        #print("closed")
+        #self.request.close()
 
 if (__name__ == "__main__"):
-   ne = NetEvent(6667,'lo0')
-   msg = ''
-   while (msg != 'done'):
-      s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-      s.connect(('127.0.0.1',6667))
-      msg = input("enter a msg: ")
-      s.send(msg.encode('utf-8'))
-      s.close()
+   ne = NetEvent(6667, 'eth0', 'ADMIN')
+   #msg = ''
+   #while (msg != 'done'):
+   #   s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+   #   s.connect(('127.0.0.1',6667))
+   #   msg = input("enter a msg: ")
+   #   s.send(msg.encode('utf-8'))
+   #   s.close()
