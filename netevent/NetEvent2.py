@@ -6,6 +6,7 @@
 
 import threading, socket, socketserver, sys, subprocess, events as builtinEvents
 from dictionary import *
+from websocket import *
 
 socketserver.TCPServer.allow_reuse_address = True
 
@@ -85,7 +86,30 @@ class NetEvent(threading.Thread):
      def handle(self):
         self.container = self.server._NetEventInstance
         self.data = self.request.recv(1024)
-        print("\n message from: " + self.client_address[0] + " - " + self.data.decode('utf-8') + "\n")
+        websock = websocket(self.request)
+		wsRequest = False
+		decodedData = ''
+		
+		# Check to see if the data is coming over a websocket connection (cloud interface)
+		# Get the decoded data
+		if (websock.isHandshakePending(self.data)):
+		   response = websock.handshake(self.data)
+		   self.request.send(response)
+		   decodedData = websock.decode()
+		   wsRequest = True
+		   if (not decodedData):
+		      self.request.close()
+			  return
+	    # Else, it could be coming from a peer (cloud server)
+		else:
+		   decodedData = self.data.decode('UTF8')
+		   
+	    print(decodedData)
+		
+		# Send back a response
+		if (wsRequest):
+	       # Tell the server to terminate
+		   self.request.send(websock.encode(Opcode.terminate,''))
         self.request.close()
 
 if (__name__ == "__main__"):
