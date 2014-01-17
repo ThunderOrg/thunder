@@ -182,7 +182,7 @@ class NetEvent():
       global getIP
       ip = getIP()
       octets = ip.split(".")
-      testOctet = 0
+      testOctet = int(octets[3])
       found = False
 
       print("Searching for controller node", end="")
