@@ -3,14 +3,15 @@ from base64 import b64encode, b64decode
 from struct import pack
 from enum import Enum
 
-class Opcode(Enum):
-   continuation = 0x00
-   text         = 0x01
-   binary       = 0x02
-   terminate    = 0x08
-   ping         = 0x09
+Opcode = Enum(
+   continuation = 0x00,
+   text         = 0x01,
+   binary       = 0x02,
+   terminate    = 0x08,
+   ping         = 0x09,
    pong         = 0x10
-   
+)
+
 class websocket:
    def __init__(self, request):
       self.socket = request
@@ -28,39 +29,34 @@ class websocket:
    # Parse the incoming request, and produce the correct handshake response.
    # Key algorithm == base64 encoded sha1 hashed incoming key prepended to websocket magic value.
    def handshake(self, data):
-      response = b'HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n'
+      response = 'HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n'
       dataArr = data.splitlines()
-	  key = b''
-	  protocol = b''
+	  key = ''
+	  protocol = ''
 	  for i in range(0, len(dataArr), 1):
-	     if (dataArr[i].startswith(b'Sec-WebSocket-Key'):
-		    key = dataArr[i].split(b': ')[1]
-		 elif (dataArr[i].startswith(b'Sec-WebSocket-Protocol'):
-		    protocol = dataArr[i].split(b': ')[1]
-	  if (key == b''):
+          if (dataArr[i].startswith('Sec-WebSocket-Key'):
+		    key = dataArr[i].split(': ')[1]
+	  if (key == ''):
 	     return False
-	  retKey = b64encode(sha1(key+self.magic).digest()).decode('UTF8').strip()
-	  response += b'Sec-WebSocket-Accept: ' + retKey + b'\r\n'
-	  if (protocol != b''):
-	     response += b'Sec-WebSocket-Protocol: ' + protocol + b'\r\n';
-	  return response
+	  retKey = b64encode(sha1(key+self.magic).digest())
+	  response += 'Sec-WebSocket-Accept: ' + retKey + '\r\n'
+      response += 'Sec-WebSocket-Protocol: base64\r\n';
+	  return b'\r\n'.join(response.encode('UTF8'))
 	  
    def encode(self, opcode, data):
 	  # Wrap data in a websocket frame
-	  encodedData = b64encode(data)
-	  buffer = None
-	  header = 0x80 | (opcode & 0x0f) # FIN + opcode
-	  payloadLen = len(data)
-	  if (payloadLen <= 125):
-	     # Format of bytes == big-endian (>) 2 unsigned chars (BB)
-	     buffer = pack('>BB', header, payloadLen)
-	  elif (payloadLen >= 126 and payloadLen <= 65535):
-	     # Format of bytes == big-endian (>) 2 unsigned chars (BB) and one unsigned short (H)
-         buffer = pack('>BBH', header, 126, payloadLen)
-	  elif (payloadLen == 127):
-	     # Format of bytes == big-endian (>) 2 unsigned chars (BB) and one unsigned long long (Q)
-         buffer = pack('>BBQ', header, 127, payloadLen)
-      return buffer
+	  encodedData = data.encode('UTF8')
+	  header = pack('!B', ((1 << 7) | (0 << 6) | (0 << 5) | (0 << 4) | Opcode.text))
+	  payloadLen = len(encodedData)
+	  if (payloadLen < 126):
+	     header += pack('!B', payloadLen)
+	  elif (payloadLen < (1 << 16)):
+         header += pack('!B', 126) + pack('!H', payLoadLen)
+	  elif (payloadLen < (1 << 63))
+         header += pack('!B', 127) + pack('!Q', payloadLen)
+      if (buffer == None):
+         return False
+      return bytes(header + encodedData)
 	  
    def decode(self):
       header = int(self.socket.recv(4))
@@ -85,7 +81,7 @@ class websocket:
 	   
 	   # We use the masking key with mod 4 indexing to unmask the payload.
 	   unmasked = ''
-	   for i in range(0, len(payload), 1):
+	   for i in range(0, payloadLen, 1):
 	      unmasked += payload[i] ^ maskingKey[i % 4]
 	   
 	   if (opcode == Opcode.text):

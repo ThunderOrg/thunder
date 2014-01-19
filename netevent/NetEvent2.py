@@ -52,7 +52,7 @@ class NetEvent(threading.Thread):
      p = subprocess.Popen(['/sbin/ifconfig', interface.strip()], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
      ifconfig = p.communicate()[0]
      if (ifconfig):
-        data = ifconfig.decode().split("\n\t")
+        data = ifconfig.decode().split("\n")
         for item in data:
            if (str(item).startswith('inet ')):
               return item.split()[1]
