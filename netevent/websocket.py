@@ -91,7 +91,7 @@ class websocket:
 	   if (opcode == Opcode.text):
 	      unmasked = unmasked.decode('UTF8')
 	   
-	   return unmaskedd
+	   return unmasked
 	   
    def unmaskHeader(self, mask, data):
       unmasked = bin(x & mask).rstrip('0')[2:]
