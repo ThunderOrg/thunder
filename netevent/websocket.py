@@ -44,7 +44,7 @@ class websocket:
 	  return b'\r\n'.join(response.encode('UTF8'))
 	  
    def encode(self, opcode, data):
-	  # Wrap data in a websocket frame
+	  # Wrap data in a hybi frame
 	  encodedData = data.encode('UTF8')
 	  # Header will be 10000001
 	  # 1 - Finalize bit (we wont have a message that exceeds 126 characters)
