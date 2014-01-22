@@ -46,6 +46,10 @@ class websocket:
    def encode(self, opcode, data):
 	  # Wrap data in a websocket frame
 	  encodedData = data.encode('UTF8')
+	  # Header will be 10000001
+	  # 1 - Finalize bit (we wont have a message that exceeds 126 characters)
+	  # 000 - 3 reserved bits
+	  # 0001 - Text opcode (UTF-8 encoded)
 	  header = pack('!B', ((1 << 7) | (0 << 6) | (0 << 5) | (0 << 4) | Opcode.text))
 	  payloadLen = len(encodedData)
 	  if (payloadLen < 126):
@@ -59,7 +63,7 @@ class websocket:
       return bytes(header + encodedData)
 	  
    def decode(self):
-      header = int(self.socket.recv(4))
+      header = int(self.socket.recv(2))
 	  fin = self.unmaskHeader(0b1000000000000000, header)
 	  opcode = self.unmaskHeader(0b0000111100000000, header)
 	  mask = self.unmaskHeader(0b0000000010000000, header)
