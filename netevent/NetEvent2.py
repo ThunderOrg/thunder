@@ -51,12 +51,21 @@ class NetEvent(threading.Thread):
   # get the IP of the desired networking interface
   def getIP(self, interface):
      p = subprocess.Popen(['/sbin/ifconfig', interface.strip()], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+<<<<<<< HEAD
      ifconfig = p.communicate()[0].decode().strip().splitlines()
      for line in ifconfig:
         lineArr = line.strip().split()
         if (lineArr[0] == 'inet'):
            return lineArr[1].split(':')[1]
 
+=======
+     ifconfig = p.communicate()[0]
+     if (ifconfig):
+        data = ifconfig.decode().split("\n")
+        for item in data:
+           if (str(item).startswith('inet ')):
+              return item.split()[1]
+>>>>>>> 8168f55c80f01a10ec8356037d388dcebc90a10d
      return '127.0.0.1'
 
   # get the MAC address of the desired networking interface
