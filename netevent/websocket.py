@@ -15,14 +15,14 @@ Opcode = Enum(
 class websocket:
    def __init__(self, request):
       self.socket = request
-      self.magic = b'258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
+      self.magic = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
 	  
    # Test for a websocket upgrade request.
    def isHandshakePending(self, data):
       dataArr = data.splitlines()
       for line in dataArr:
-         lineArr = line.split(b': ')
-         if (lineArr[0].lower() == b'upgrade' and lineArr[1].lower() == b'websocket'):
+         lineArr = line.decode("UTF8").split(": ")
+         if (lineArr[0].lower() == 'upgrade' and lineArr[1].lower() == 'websocket'):
             return True
       return False
 	  
@@ -34,14 +34,14 @@ class websocket:
       key = ''
       protocol = ''
       for i in range(0, len(dataArr), 1):
-         if (dataArr[i].startswith('Sec-WebSocket-Key'):
+         if (dataArr[i].startswith('Sec-WebSocket-Key')):
             key = dataArr[i].split(': ')[1]
       if (key == ''):
          return False
-      retKey = b64encode(sha1(key+self.magic).digest())
-      response += 'Sec-WebSocket-Accept: ' + retKey + '\r\n'
-      response += 'Sec-WebSocket-Protocol: base64\r\n';
-      return b'\r\n'.join(response.encode('UTF8'))
+      retKey = b64encode(sha1((key+self.magic).encode("UTF8")).digest())
+      print(retKey)
+      response += 'Sec-WebSocket-Accept: ' + retKey.decode() + '\r\n'
+      return response.encode("UTF8")
 	  
    def encode(self, opcode, data):
       # Wrap data in a hybi frame
@@ -56,10 +56,8 @@ class websocket:
          header += pack('!B', payloadLen)
       elif (payloadLen < (1 << 16)):
          header += pack('>B', 126) + pack('>H', payLoadLen)
-      elif (payloadLen < (1 << 63))
+      elif (payloadLen < (1 << 63)):
          header += pack('>B', 127) + pack('>Q', payloadLen)
-      if (buffer == None):
-         return False
       return bytes(header + encodedData)
 	  
    def decode(self):
@@ -68,7 +66,7 @@ class websocket:
       opcode = self.unmaskHeader(0b0000111100000000, header)
       mask = self.unmaskHeader(0b0000000010000000, header)
       payloadLen = self.unmaskHeader(0b0000000001111111, header)
-
+      print(payloadLen)
       if (opcode == Opcode.terminate or mask == 0):  # Terminate the connection
          return False
 	  

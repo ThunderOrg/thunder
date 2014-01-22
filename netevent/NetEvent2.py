@@ -51,21 +51,14 @@ class NetEvent(threading.Thread):
   # get the IP of the desired networking interface
   def getIP(self, interface):
      p = subprocess.Popen(['/sbin/ifconfig', interface.strip()], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-<<<<<<< HEAD
-     ifconfig = p.communicate()[0].decode().strip().splitlines()
-     for line in ifconfig:
-        lineArr = line.strip().split()
-        if (lineArr[0] == 'inet'):
-           return lineArr[1].split(':')[1]
-
-=======
      ifconfig = p.communicate()[0]
      if (ifconfig):
         data = ifconfig.decode().split("\n")
         for item in data:
-           if (str(item).startswith('inet ')):
-              return item.split()[1]
->>>>>>> 8168f55c80f01a10ec8356037d388dcebc90a10d
+           item = item.strip()
+           if (item.startswith('inet ')):
+              print(item)
+              return item.split(':')[1].split(' ')[0]
      return '127.0.0.1'
 
   # get the MAC address of the desired networking interface
@@ -106,14 +99,14 @@ class NetEvent(threading.Thread):
         # Get the decoded data
         if (websock.isHandshakePending(self.data)):
            print("Accepting websocket handshake")
-           handshake = websock.handshake(self.data)
+           handshake = websock.handshake(self.data.decode())
+           print(handshake)
            self.request.send(handshake)
-           #d = self.request.recv(1024)
-           #print(d)
-           #d2 = websock.encode(Opcode.text, "Hello!")
-           #self.request.send(d2)
-           #print("Sent response")
+           self.request.close()
+           while (1):
+              pass
            #decodedData = websock.decode()
+           #print(decodedData)
            #wsRequest = True
            #if (not decodedData):
            #   self.request.close()
@@ -122,7 +115,9 @@ class NetEvent(threading.Thread):
         else:
            decodedData = self.data.decode('UTF-8')
 
-        print(decodedData)
+   #     x = self.request.recv(4096)
+    #    print(x)
+        #print(decodedData)
 
         # Send back a response
         #if (wsRequest):
