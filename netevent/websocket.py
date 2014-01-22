@@ -55,9 +55,9 @@ class websocket:
 	  if (payloadLen < 126):
 	     header += pack('!B', payloadLen)
 	  elif (payloadLen < (1 << 16)):
-         header += pack('!B', 126) + pack('!H', payLoadLen)
+         header += pack('>B', 126) + pack('>H', payLoadLen)
 	  elif (payloadLen < (1 << 63))
-         header += pack('!B', 127) + pack('!Q', payloadLen)
+         header += pack('>B', 127) + pack('>Q', payloadLen)
       if (buffer == None):
          return False
       return bytes(header + encodedData)
@@ -73,9 +73,9 @@ class websocket:
 		 return False
 	  
 	  extraLen = 0
-	  if (len == 126): # Two more bytes indicate length
+	  if (len == 126): # Two more bytes indicate length.  16-bits.
 	     extraLen = int(self.socket.recv(2))
-	  elif (len == 127): # Eight more bytes indicate length
+	  elif (len == 127): # Eight more bytes indicate length.  Python should give us a 64-bit int.
          extraLen = int(self.socket.recv(8))
 
 	   payloadLen += extraLen
