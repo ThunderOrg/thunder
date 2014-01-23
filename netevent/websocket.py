@@ -17,14 +17,22 @@ class websocket:
       self.socket = request
       self.magic = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
 	  
-   # Test for a websocket upgrade request.
+   # Test for a websocket upgrade request.  If request is valid return True.  Otherwise return False.
    def isHandshakePending(self, data):
+      pending = False
+      numKeys = 0
       dataArr = data.splitlines()
       for line in dataArr:
          lineArr = line.decode("UTF8").split(": ")
          if (lineArr[0].lower() == 'upgrade' and lineArr[1].lower() == 'websocket'):
-            return True
-      return False
+            pending = True
+         if (lineArr[0].lower() == 'sec-websocket-key'):
+            numKeys++
+
+      if (numKeys != 0):
+         pending = False
+
+      return pending
 	  
    # Parse the incoming request, and produce the correct handshake response.
    # Key algorithm == base64 encoded sha1 hashed incoming key prepended to websocket magic value.
@@ -43,12 +51,14 @@ class websocket:
       return response.encode("UTF8")
 	  
    def encode(self, opcode, data):
-      # Wrap data in a hybi frame
+      # Wrap data in a hybi-13 frame
       encodedData = data.encode('UTF8')
+
       # Header will be 10000001
       # 1 - Finalize bit (we wont have a message that exceeds 126 characters)
       # 000 - 3 reserved bits
       # 0001 - Text opcode (UTF-8 encoded)
+      # 129 in base10
       header = pack('!B', ((1 << 7) | (0 << 6) | (0 << 5) | (0 << 4) | Opcode.text))
       payloadLen = len(encodedData)
       if (payloadLen < 126):
@@ -62,15 +72,20 @@ class websocket:
    def decode(self):
       payloadLen = ord(chr(self.socket.recv(2)[1])) & 127
       if (len == 126): # Two more bytes indicate length.  16-bits.
-         payloadLen = struct.unpack(">H", self.socket.recv(2))[0]
+         payloadLen = unpack(">H", self.socket.recv(2))[0]
       elif (len == 127): # Eight more bytes indicate length.  Python should give us a 64-bit int.
-         payloadLen = struct.unpack(">Q", self.socket.recv(8))[0]
+         payloadLen = unpack(">Q", self.socket.recv(8))[0]
 
-      mask = [byte for byte in self.socket.recv(4)]
+      # Get an array of bytes from the key
+      maskingKey = self.socket.recv(4)
+      mask = [byte for byte in maskingKey]
+
+      # Get the masked data
+      maskedData = self.socket.recv(payloadLen)
 
       # We use the masking key with mod 4 indexing to unmask the payload.
       unmasked = ''
-      for char in self.socket.recv(payloadLen):
+      for char in maskedData:
          unmasked += chr(char ^ mask[len(unmasked) % 4])
 
       return unmasked
