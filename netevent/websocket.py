@@ -39,8 +39,7 @@ class websocket:
       if (key == ''):
          return False
       retKey = b64encode(sha1((key+self.magic).encode("UTF8")).digest())
-      print(retKey)
-      response += 'Sec-WebSocket-Accept: ' + retKey.decode() + '\r\n'
+      response += 'Sec-WebSocket-Accept: ' + retKey.decode() + '\r\n\r\n'
       return response.encode("UTF8")
 	  
    def encode(self, opcode, data):
@@ -61,38 +60,17 @@ class websocket:
       return bytes(header + encodedData)
 	  
    def decode(self):
-      header = int(self.socket.recv(2))
-      fin = self.unmaskHeader(0b1000000000000000, header)
-      opcode = self.unmaskHeader(0b0000111100000000, header)
-      mask = self.unmaskHeader(0b0000000010000000, header)
-      payloadLen = self.unmaskHeader(0b0000000001111111, header)
-      print(payloadLen)
-      if (opcode == Opcode.terminate or mask == 0):  # Terminate the connection
-         return False
-	  
-      extraLen = 0
+      payloadLen = ord(chr(self.socket.recv(2)[1])) & 127
       if (len == 126): # Two more bytes indicate length.  16-bits.
-         extraLen = int(self.socket.recv(2))
+         payloadLen = struct.unpack(">H", self.socket.recv(2))[0]
       elif (len == 127): # Eight more bytes indicate length.  Python should give us a 64-bit int.
-         extraLen = int(self.socket.recv(8))
+         payloadLen = struct.unpack(">Q", self.socket.recv(8))[0]
 
-      payloadLen += extraLen
-	   
-      maskingKey = self.socket.recv(4)
-      payload = self.socket.recv(payloadLen)
-	   
+      mask = [byte for byte in self.socket.recv(4)]
+
       # We use the masking key with mod 4 indexing to unmask the payload.
       unmasked = ''
-      for i in range(0, payloadLen, 1):
-         unmasked += payload[i] ^ maskingKey[i % 4]
+      for char in self.socket.recv(payloadLen):
+         unmasked += chr(char ^ mask[len(unmasked) % 4])
 
-      if (opcode == Opcode.text):
-         unmasked = unmasked.decode('UTF8')
-	   
       return unmasked
-	   
-   def unmaskHeader(self, mask, data):
-      unmasked = bin(x & mask).rstrip('0')[2:]
-      if (unmasked == ''):
-         return 0
-      return int(unmasked,2)

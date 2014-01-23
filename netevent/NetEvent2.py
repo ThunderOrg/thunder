@@ -57,7 +57,6 @@ class NetEvent(threading.Thread):
         for item in data:
            item = item.strip()
            if (item.startswith('inet ')):
-              print(item)
               return item.split(':')[1].split(' ')[0]
      return '127.0.0.1'
 
@@ -86,11 +85,12 @@ class NetEvent(threading.Thread):
 
   # Handler class for handling incoming connections
   class NetEventServer(socketserver.BaseRequestHandler):
+     def setup(self):
+        self.request.setsockopt(socket.IPPROTO_TCP,socket.TCP_NODELAY, True)
+
      def handle(self):
-        self.request.setblocking(1)
         self.container = self.server._NetEventInstance
         self.data = self.request.recv(1024)
-        print(self.data.decode('UTF-8'))
         websock = websocket(self.request)
         wsRequest = False
         decodedData = ''
@@ -100,28 +100,20 @@ class NetEvent(threading.Thread):
         if (websock.isHandshakePending(self.data)):
            print("Accepting websocket handshake")
            handshake = websock.handshake(self.data.decode())
-           print(handshake)
            self.request.sendall(handshake)
-           #decodedData = websock.decode()
-           #print(decodedData)
-           #wsRequest = True
-           #if (not decodedData):
-           #   self.request.close()
-           #   return
+           decodedData = websock.decode()
+           print(decodedData)
+           self.request.sendall(websock.encode(Opcode.text, "Hello!"))
+           wsRequest = True
+           if (not decodedData):
+              self.request.close()
+              return
         # Else, it could be coming from a peer (cloud server)
         else:
            decodedData = self.data.decode('UTF-8')
 
-   #     x = self.request.recv(4096)
-    #    print(x)
-        #print(decodedData)
-
         # Send back a response
-        #if (wsRequest):
-           # Tell the server to terminate
-        #   self.request.send(websock.encode(Opcode.terminate,''))
-        #print("closed")
-        #self.request.close()
+        self.request.close()
 
 if (__name__ == "__main__"):
    ne = NetEvent(6667, 'eth0', 'ADMIN')
