@@ -101,10 +101,7 @@ class NetEvent(threading.Thread):
            print("Accepting websocket handshake")
            handshake = websock.handshake(self.data.decode())
            print(handshake)
-           self.request.send(handshake)
-           self.request.close()
-           while (1):
-              pass
+           self.request.sendall(handshake)
            #decodedData = websock.decode()
            #print(decodedData)
            #wsRequest = True
