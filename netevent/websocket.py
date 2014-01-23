@@ -26,7 +26,7 @@ class websocket:
          lineArr = line.decode("UTF8").split(": ")
          if (lineArr[0].lower() == 'upgrade' and lineArr[1].lower() == 'websocket'):
             pending = True
-         if (lineArr[0].lower() == 'sec-websocket-key'):
+         elif (lineArr[0].lower() == 'sec-websocket-key'):
             numKeys++
 
       if (numKeys != 0):
