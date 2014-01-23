@@ -65,10 +65,15 @@ class NetEvent(threading.Thread):
      p = subprocess.Popen(['/sbin/ifconfig', interface.strip()], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
      ifconfig = p.communicate()[0]
      if (ifconfig):
-        data = ifconfig.decode().split("\n\t")
+        data = ifconfig.decode().split("\n")
         for item in data:
-           if (item.startswith('ether ')):
-              return item.split()[1]
+           itemArr = item.strip().split(' ')
+           found = False
+           for field in itemArr:
+              if (found):
+                 return field.strip()
+              elif (field.lower() == 'hwaddr')
+                 found = True
      return None
  
   # inherited from threading.Thread
@@ -83,6 +88,8 @@ class NetEvent(threading.Thread):
   def registerEvent(self, name, event):
      self.events.append((name, event))
 
+  
+
   # Handler class for handling incoming connections
   class NetEventServer(socketserver.BaseRequestHandler):
      def setup(self):
@@ -92,29 +99,27 @@ class NetEvent(threading.Thread):
         self.container = self.server._NetEventInstance
         self.data = self.request.recv(1024)
         websock = websocket(self.request)
-        wsRequest = False
         decodedData = ''
-
+        
         # Check to see if the data is coming over a websocket connection (cloud interface)
-        # Get the decoded data
         if (websock.isHandshakePending(self.data)):
-           print("Accepting websocket handshake")
            handshake = websock.handshake(self.data.decode())
            self.request.sendall(handshake)
            decodedData = websock.decode()
-           print(decodedData)
-           self.request.sendall(websock.encode(Opcode.text, "Hello!"))
-           wsRequest = True
-           if (not decodedData):
-              self.request.close()
-              return
         # Else, it could be coming from a peer (cloud server)
         else:
-           decodedData = self.data.decode('UTF-8')
-
+           decodedData = self.data.decode('UTF8')
+        
+        if (decodedData != ''):
+           self.processRequest(decodedData)
+           
         # Send back a response
         self.request.close()
 
+     # TODO: Process request
+     def processRequest(self, data):
+        pass
+      
 if (__name__ == "__main__"):
    ne = NetEvent(6667, 'eth0', 'ADMIN')
    #msg = ''
