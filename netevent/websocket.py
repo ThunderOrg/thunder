@@ -40,7 +40,6 @@ class websocket:
       response = 'HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n'
       dataArr = data.splitlines()
       key = ''
-      protocol = ''
       for i in range(0, len(dataArr), 1):
          if (dataArr[i].startswith('Sec-WebSocket-Key')):
             key = dataArr[i].split(': ')[1]
