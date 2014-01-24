@@ -1,8 +1,15 @@
+# Simple websocket support for NetEvent
+# Developed by Gabriel Jacob Loewen
+# The University of Alabama
+# Cloud and Cluster Computer Lab
+# Copyright 2014 Gabriel Jacob Loewen
+
 from hashlib import sha1
 from base64 import b64encode, b64decode
 from struct import pack, unpack
 from enum import Enum
 
+# Enum of opcodes for simplicity
 Opcode = Enum(
    continuation = 0x00,
    text         = 0x01,
@@ -12,6 +19,7 @@ Opcode = Enum(
    pong         = 0x10
 )
 
+# Handle websocket upgrade requests and send/receive hybi-13 websocket frames
 class websocket:
    def __init__(self, request):
       self.socket = request
@@ -48,7 +56,8 @@ class websocket:
       retKey = b64encode(sha1((key+self.magic).encode("UTF8")).digest())
       response += 'Sec-WebSocket-Accept: ' + retKey.decode() + '\r\n\r\n'
       return response.encode("UTF8")
-	  
+
+   # Wrap data inside of a hybi-13 websocket frame.  Does not require masking from server-client.
    def encode(self, opcode, data):
       # Wrap data in a hybi-13 frame
       encodedData = data.encode('UTF8')
@@ -67,7 +76,8 @@ class websocket:
       elif (payloadLen < (1 << 63)):
          header += pack('>B', 127) + pack('>Q', payloadLen)
       return bytes(header + encodedData)
-	  
+   
+   # Read a hybi-13 websocket frame and unmask the payload.
    def decode(self):
       payloadLen = self.socket.recv(2)[1] & 127
       if (len == 126): # Two more bytes indicate length.  16-bits.
@@ -84,7 +94,7 @@ class websocket:
 
       # We use the masking key with mod 4 indexing to unmask the payload.
       unmasked = ''
-      for char in maskedData:
-         unmasked += chr(char ^ mask[len(unmasked) % 4])
+      for byte in maskedData:
+         unmasked += chr(byte ^ mask[len(unmasked) % 4])
 
       return unmasked
