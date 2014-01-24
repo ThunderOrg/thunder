@@ -60,6 +60,7 @@ class NetEvent(threading.Thread):
      
      # start the thread
      self.start()
+     return
      
   def getClients(self):
      return self.clients
@@ -85,7 +86,8 @@ class NetEvent(threading.Thread):
   # deconstructor
   def __del__(self):
      self.running = False
-
+     return
+   
   # get the IP of the desired networking interface
   def getIP(self, interface):
      p = subprocess.Popen(['/sbin/ifconfig', interface.strip()], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -120,7 +122,7 @@ class NetEvent(threading.Thread):
      while (self.running):
         self.server.handle_request()
      self.server.shutdown()
-     sys.exit()
+     return
   
   # send a message to another machine running the NetEvent service
   def publishToHost(self, host, data):
@@ -164,7 +166,8 @@ class NetEvent(threading.Thread):
   # register an event by adding it to a dictionary (NAME->EVENT)
   def registerEvent(self, name, event):
      self.events.append((name, event))
-
+     return
+   
   # register client with a server (subscribe to a publisher)
   def registerClient(self, group, host):
      # get the ip address of this machine.
@@ -182,12 +185,14 @@ class NetEvent(threading.Thread):
      
      # start a heartbeat for fault tolerance
      self.startHeartBeat()
-  
+     return
+   
   # spin up another thread that will periodically ping the server to make sure that it is still alive.
   def startHeartBeat(self):
       self.heartBeatThread = threading.Thread(target = self.heartBeat)
       self.heartBeatThread.start()
-  
+      return
+    
   # send a 'pulse' to the publisher.  If the publisher doesn't respond then maybe its IP has changed
   # in which case we can try to connect to it again by polling addresses on the network.
   def heartBeat(self):
@@ -268,7 +273,8 @@ class NetEvent(threading.Thread):
   class NetEventServer(socketserver.BaseRequestHandler):
      def setup(self):
         self.request.setsockopt(socket.IPPROTO_TCP,socket.TCP_NODELAY, True)
-
+        return
+      
      def handle(self):
         self.container = self.server._NetEventInstance
         self.data = self.request.recv(1024)
@@ -295,11 +301,12 @@ class NetEvent(threading.Thread):
               
         # close the connection
         self.request.close()
+        return
 
      # TODO: Process websocket request
      def processWebsocketRequest(self, data):
         print(data)
-        pass
+        return
         
      def processTraditionalRequest(self, data):
         events = self.container.getEvents()
@@ -346,6 +353,8 @@ class NetEvent(threading.Thread):
         # check if the caller is sending a heartbeat           
         elif (data[0] == 'ALIVE'):
            self.request.sendall(data[0].encode('UTF8'))
+        
+        return
       
 if (__name__ == "__main__"):
    ne = NetEvent(6667, 'eth0', 'ADMIN')
