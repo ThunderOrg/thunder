@@ -69,7 +69,7 @@ class websocket:
       return bytes(header + encodedData)
 	  
    def decode(self):
-      payloadLen = ord(chr(self.socket.recv(2)[1])) & 127
+      payloadLen = self.socket.recv(2)[1] & 127
       if (len == 126): # Two more bytes indicate length.  16-bits.
          payloadLen = unpack(">H", self.socket.recv(2))[0]
       elif (len == 127): # Eight more bytes indicate length.  Python should give us a 64-bit int.
