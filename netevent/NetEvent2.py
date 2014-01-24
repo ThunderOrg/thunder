@@ -4,7 +4,7 @@
 # Cloud and Cluster Computer Lab
 # Copyright 2014 Gabriel Jacob Loewen
 
-import re, threading, socket, socketserver, sys, subprocess, events as builtinEvents
+import auth, re, threading, socket, socketserver, sys, subprocess, events as builtinEvents
 from dictionary import *
 from websocket import *
 from time import sleep
@@ -66,6 +66,21 @@ class NetEvent(threading.Thread):
     
   def getEvents(self):
      return self.events
+     
+  def getRole(self):
+     return self.role
+     
+  def getAddress(self):
+     return (self.IP, self.port)
+     
+  def getGroup(self):
+     return self.group
+     
+  def getPublisher(self):
+     return self.publisher
+     
+  def getPublisherSubnet(self):
+     return self.publisherSubnet
 
   # deconstructor
   def __del__(self):
@@ -328,7 +343,7 @@ class NetEvent(threading.Thread):
                     c = [(self.data[1], int(self.data[2]))]
                     clients.append((self.data[3], c))
         
-        # check if the caller is sending a heartbear            
+        # check if the caller is sending a heartbeat           
         elif (data[0] == 'ALIVE'):
            self.request.sendall(data[0].encode('UTF8'))
       
