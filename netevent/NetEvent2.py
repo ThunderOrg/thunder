@@ -112,7 +112,7 @@ class NetEvent(threading.Thread):
            for field in itemArr:
               if (found):
                  return field.strip()
-              elif (field.lower() == 'hwaddr')
+              elif (field.lower() == 'hwaddr'):
                  found = True
      return None
  
@@ -248,7 +248,7 @@ class NetEvent(threading.Thread):
            self.registerClient((address, 6667), self.group)
            found = True
         else:
-           testOctet++
+           testOctet+=1
            if (testOctet > 255):
               testOctet = 0
      return
@@ -264,10 +264,10 @@ class NetEvent(threading.Thread):
         response = s.recv(6).decode('UTF8')
         if (response == 'ADMIN'):
            return True
-      except:
-         print("Error in connecting to", address)
-      s.close()
-      return False
+     except:
+        print("Error in connecting to", address)
+     s.close()
+     return False
       
   # Handler class for handling incoming connections
   class NetEventServer(socketserver.BaseRequestHandler):
@@ -310,7 +310,8 @@ class NetEvent(threading.Thread):
            group = data[1]
            res = self.container.publishToGroup(group, data[2])
            self.request.sendall(res.encode('UTF8'))
-
+        else:
+           print(data)
         return
         
      def processTraditionalRequest(self, data):
@@ -318,7 +319,7 @@ class NetEvent(threading.Thread):
         clients = self.container.getClients()
         
         # check if the request is an event call
-        if (events.contains(data[0]):
+        if (events.contains(data[0])):
            func = events.get(data[0])
            params = []
            for i in range(1, len(data), 1):

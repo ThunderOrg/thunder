@@ -35,9 +35,9 @@ class websocket:
          if (lineArr[0].lower() == 'upgrade' and lineArr[1].lower() == 'websocket'):
             pending = True
          elif (lineArr[0].lower() == 'sec-websocket-key'):
-            numKeys++
+            numKeys+=1
 
-      if (numKeys != 0):
+      if (numKeys != 1):
          pending = False
 
       return pending
