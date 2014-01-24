@@ -303,9 +303,14 @@ class NetEvent(threading.Thread):
         self.request.close()
         return
 
-     # TODO: Process websocket request
      def processWebsocketRequest(self, data):
-        print(data)
+        clients = self.container.getClients()
+        # check if the client is requesting data from a group
+        if (data[0] == 'GROUP'):
+           group = data[1]
+           res = self.container.publishToGroup(group, data[2])
+           self.request.sendall(res.encode('UTF8'))
+
         return
         
      def processTraditionalRequest(self, data):
