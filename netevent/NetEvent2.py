@@ -30,12 +30,12 @@ class NetEvent(threading.Thread):
       self._IP = self.getIP(interface)
 
       # create a TCP server, and bind it to the address of the desired interface
-      self._server = socketserver.TCPServer((self.IP, port), self.NetEventServer)
+      self._server = socketserver.TCPServer((self._IP, port), self.NetEventServer)
       self._server._NetEventInstance = self
 
       # workaround for getting the port number for auto-assigned ports (default behavior for clients)
-      self._port = self.server.server_address[1]
-      print("Binding to IP address - ", self.IP,":",port, sep='')
+      self._port = self._server.server_address[1]
+      print("Binding to IP address - ", self._IP,":",port, sep='')
 
       # create a dictionary mapping an event name to a function
       self._events = Dictionary()
@@ -318,7 +318,8 @@ class NetEvent(threading.Thread):
          # close the connection
          self.request.close()
          return
-
+      
+      # the data is coming from the web interface.  the web interface should only be able to retrieve data from clusters and request virtual machines
       def processWebsocketRequest(self, data):
          clients = self.container.clients
          # check if the client is requesting data from a group
@@ -326,6 +327,13 @@ class NetEvent(threading.Thread):
             group = data[1]
             res = self.container.publishToGroup(group, data[2])
             self.request.sendall(res.encode('UTF8'))
+         
+         # check if the client is requesting a VM instantiation
+         elif (data[0] == 'VM'):
+            vmName = data[1]
+            repoAddress = data[2]
+         
+         # for debugging purposes, lets print out the data for all other cases
          else:
             print(data)
          return
