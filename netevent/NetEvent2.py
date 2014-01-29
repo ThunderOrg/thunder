@@ -73,6 +73,10 @@ class NetEvent(threading.Thread):
    @property
    def events(self):
       return self._events
+
+   @property
+   def interface(self):
+      return self._interface
   
    @property
    def role(self):
@@ -106,8 +110,23 @@ class NetEvent(threading.Thread):
    def __del__(self):
       self.running = False
       return
+
+   # retrieve a semicolon delimeted list of clusters
+   def getClusterList(self):
+      ret = ''
+      for cluster in self.clients.collection():
+         ret += cluster + ';'
+      return ret[:-1]
    
-  # get the IP of the desired networking interface
+   # Retrieve a semicolon delimeted list of clients
+   def getClientList(self, group):
+      listString = ''
+      clist = ''
+      for client in self.clients.get(group):
+         clist += client[0] + ':' + str(client[1]) + ';';
+      return clist[:-1]
+
+   # get the IP of the desired networking interface
    def getIP(self, interface):
       p = subprocess.Popen(['/sbin/ifconfig', interface.strip()], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
       ifconfig = p.communicate()[0]
@@ -161,18 +180,21 @@ class NetEvent(threading.Thread):
       # remove that host from our list of clients as it has probably disconnected and is no
       # longer available.
       except:
+         print("Host",host,"unavailable.  deleting")
+         print(self.clients.collection())
          for grp in self.clients.collection():
             addresses = self.clients.get(grp)
             for addr in addresses:
                if (addr == host):
                   addresses.remove(addr)
+         print(self.clients.collection())
          return None
   
    # publish data to an entire group
    def publishToGroup(self, group, data):
       ret = ''
       if (self.clients.contains(group)):
-         addresses = clients.get(group)
+         addresses = self.clients.get(group)
          for addr in addresses:
             val = self.publishToHost(addr, data)
             if (val != None):
@@ -188,10 +210,10 @@ class NetEvent(threading.Thread):
       return
    
    # register client with a server (subscribe to a publisher)
-   def registerClient(self, group, host):    
+   def registerClient(self, host, group):    
       # send an authorization request to the server.  The server should return a nonce value.
       nonce = self.publishToHost(host, 'AUTH')
-  
+      
       # encrypt the nonce with pre-shared key and send it back to the host.
       decVal = auth.encrypt(nonce).decode('UTF8')
       ret = self.publishToHost(host, 'SUBSCRIBE ' + self.address[0] + ' ' + str(self.address[1]) + ' ' + self.group + ' ' + decVal)
@@ -254,13 +276,14 @@ class NetEvent(threading.Thread):
      
       # we couldn't find the publisher in the local routing table.  perform a linear scan over the subnet.
       found = False
-      ip = getIP(self.interface)
+      ip = self.getIP(self.interface)
       octets = ip.split('.')
       testOctet = int(octets[3])
       while (not found):
          address = octets[0] + '.' + octets[1] + '.' + self.publisherSubnet + '.' + str(testOctet)
          if (self.testForPublisher(address)):
             # this address is a publisher.  connect to it!
+            print("Found publisher at", address)
             self.registerClient((address, 6667), self.group)
             found = True
          else:
@@ -294,6 +317,7 @@ class NetEvent(threading.Thread):
       def handle(self):
          self.container = self.server._NetEventInstance
          self.data = self.request.recv(1024)
+         print("Received:", self.data.decode('UTF8'))
          websock = websocket(self.request)
          decodedData = ''
          ws = False
@@ -302,16 +326,16 @@ class NetEvent(threading.Thread):
          if (websock.isHandshakePending(self.data)):
             handshake = websock.handshake(self.data.decode())
             self.request.sendall(handshake)
-            decodedData = websock.decode()
+            decodedData = websock.decode().strip()
             ws = True
          # Else, it could be coming from a peer (cloud server)
          else:
-            decodedData = self.data.decode('UTF8')
+            decodedData = self.data.decode('UTF8').strip()
         
          # if there is data waiting to be processed then process it!
          if (decodedData != ''):
             if (ws):
-               self.processWebsocketRequest(decodedData.split())
+               self.processWebsocketRequest(decodedData.split(), websock)
             else:
                self.processTraditionalRequest(decodedData.split())
               
@@ -320,19 +344,25 @@ class NetEvent(threading.Thread):
          return
       
       # the data is coming from the web interface.  the web interface should only be able to retrieve data from clusters and request virtual machines
-      def processWebsocketRequest(self, data):
+      def processWebsocketRequest(self, data, websock):
          clients = self.container.clients
          # check if the client is requesting data from a group
-         if (data[0] == 'GROUP'):
+         if (data[0] == 'EXECGROUP'):
             group = data[1]
             res = self.container.publishToGroup(group, data[2])
-            self.request.sendall(res.encode('UTF8'))
-         
-         # check if the client is requesting a VM instantiation
-         elif (data[0] == 'VM'):
-            vmName = data[1]
-            repoAddress = data[2]
-         
+            self.request.sendall(websock.encode(Opcode.text, res))
+         # check if the client is requesting data from a node
+         elif (data[0] == 'EXECNODE'):
+            node = (data[1], int(data[2]))
+            print(data[3])
+            res = self.container.publishToHost(node, data[3])
+            self.request.sendall(websock.encode(Opcode.text, res))
+         # check if the client is requesting a list of clusters available
+         elif (data[0] == 'GROUPNAMES'):
+            self.request.sendall(websock.encode(Opcode.text, self.container.getClusterList()))
+         # check if the client is requesting a list of nodes in a particular cluster
+         elif (data[0] == 'NODESINGROUP'):
+            self.request.sendall(websock.encode(Opcode.text, self.container.getClientList(data[1])))
          # for debugging purposes, lets print out the data for all other cases
          else:
             print(data)
@@ -351,7 +381,7 @@ class NetEvent(threading.Thread):
               
             # call the function and get the result
             response = func(params)
-           
+ 
             # send the result to the caller
             self.request.sendall(str(response).encode('UTF8'))
         
@@ -368,7 +398,7 @@ class NetEvent(threading.Thread):
          # check if the caller is requesting authorization for subscription
          elif (data[0] == 'SUBSCRIBE'):
             r = data[4].encode('UTF8')
-            m = auth.decrypt(r).decode('UTF8')[1:-1].split(':')[1]
+            m = auth.decrypt(r).decode('UTF8')[1:].split(':')[1]
             if (m == self.container._nonce):
                # we can consider this subscriber to be authentic
                if (len(data) == 5): # should be 5 values
@@ -377,8 +407,8 @@ class NetEvent(threading.Thread):
                      c = clients.get(data[3])
                      c.append((data[1], int(data[2])))
                   else:
-                     c = [(self.data[1], int(self.data[2]))]
-                     clients.append((self.data[3], c))
+                     c = [(data[1], int(data[2]))]
+                     clients.append((data[3], c))
         
          # check if the caller is sending a heartbeat           
          elif (data[0] == 'ALIVE'):

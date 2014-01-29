@@ -1,5 +1,5 @@
 #! /usr/bin/env python3
-from NetEvent import *
+from NetEvent2 import *
 
 def invoke(params):
    if (len(params) < 2):
@@ -18,5 +18,5 @@ def invoke(params):
          host = (params[1], int(params[2]))
          return netEvent.publishToHost(host,params[3])
 
-netEvent = NetEvent(6667, "ADMIN")
+netEvent = NetEvent(6667, 'eth0', 'ADMIN')
 netEvent.registerEvent("INVOKE", invoke)

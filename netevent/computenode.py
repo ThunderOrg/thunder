@@ -1,22 +1,12 @@
 #!/usr/bin/env python3
-from NetEvent import *
+from NetEvent2 import *
 from subprocess import call
 #import libvirt
 
 def main():
-   netEvent = NetEvent()
+   netEvent = NetEvent(0,'eth0','CLIENT','PRIMARY_COMPUTE','1')
    netEvent.registerEvent("INSTANTIATE", instantiate)
-   netEvent.registerEvent("MOUNTSTORE", mountStore)
-   netEvent.associateGroup("PRIMARY_COMPUTE")
-   netEvent.findController()
-
-def mountStore(params):
-   username = params[0]
-   password = params[1]
-   address = params[2]
-   store = params[3]
-   call(["mount","-t cifs -o username=" + username + ",password="+ password + "//" + address + "/" + store + "/thunder_store"])
-   return 1
+   netEvent.findPublisher()
 
 def instantiate(params):
    # Instantiate a virtual machine
