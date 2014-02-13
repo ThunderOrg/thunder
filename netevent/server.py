@@ -1,5 +1,5 @@
 #! /usr/bin/env python3
-from NetEvent2 import *
+from NetEvent import *
 
 def invoke(params):
    if (len(params) < 2):
