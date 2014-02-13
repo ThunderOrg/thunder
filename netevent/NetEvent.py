@@ -114,17 +114,19 @@ class NetEvent(threading.Thread):
    # retrieve a semicolon delimeted list of clusters
    def getClusterList(self):
       ret = ''
+      self.cleanupClients()
       for cluster in self.clients.collection():
          ret += cluster + ';'
-      return ret[:-1]
+      return ret[:-1].strip()
    
    # Retrieve a semicolon delimeted list of clients
    def getClientList(self, group):
       listString = ''
       clist = ''
+      self.cleanupClients()
       for client in self.clients.get(group):
          clist += client[0] + ':' + str(client[1]) + ';';
-      return clist[:-1]
+      return clist[:-1].strip()
 
    # get the IP of the desired networking interface
    def getIP(self, interface):
@@ -164,31 +166,34 @@ class NetEvent(threading.Thread):
   
    # send a message to another machine running the NetEvent service
    def publishToHost(self, host, data):
-      try:
-         # open a socket connection
-         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-         s.connect(host)
-         # encode the data before sending
-         s.send(data.encode('UTF8'))
-         # wait for a response from the host
-         response = s.recv(1024).decode()
-         s.close()
-         # return a colon delimited string containing the IP address of the host and its response
-         return host[0]+':'+str(response)
-        
-      # if for some reason the host rejects the message or is not sent properly then we need to
-      # remove that host from our list of clients as it has probably disconnected and is no
-      # longer available.
-      except:
-         print("Host",host,"unavailable.  deleting")
-         print(self.clients.collection())
-         for grp in self.clients.collection():
-            addresses = self.clients.get(grp)
-            for addr in addresses:
-               if (addr[0] == host[0] and addr[1] == host[1]):
-                  addresses.remove(addr)
-         print(self.clients.collection())
-         return None
+      # open a socket connection
+      s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+      s.connect(host)
+      # encode the data before sending
+      s.send(data.encode('UTF8'))
+      # wait for a response from the host
+      response = s.recv(1024).decode()
+      s.close()
+      # return a colon delimited string containing the IP address of the host and its response
+      return host[0]+':'+str(response)
+
+   def cleanupClients(self):
+      # For each group in the list of clients, find the unavailable address and remove it.
+      emptyGroups = []
+      for grp in self.clients.collection():
+         addresses = self.clients.get(grp)
+         for addr in addresses:
+            try:
+               s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+               s.connect(addr)
+               s.close()
+            except:
+               addresses.remove(addr)
+               if (len(self.clients.get(grp)) == 0):
+                  emptyGroups += [grp]
+      # Any groups with no clients should be removed
+      for grp in emptyGroups:
+         del self.clients.collection()[grp]
   
    # publish data to an entire group
    def publishToGroup(self, group, data):
@@ -202,7 +207,7 @@ class NetEvent(threading.Thread):
       if (len(ret) > 0):
          return ret[:-1]
       else:
-         return ''
+         return None
         
    # register an event by adding it to a dictionary (NAME->EVENT)
    def registerEvent(self, name, event):
@@ -213,7 +218,7 @@ class NetEvent(threading.Thread):
    def registerClient(self, host, group):    
       # send an authorization request to the server.  The server should return a nonce value.
       nonce = self.publishToHost(host, 'AUTH')
-      
+
       # encrypt the nonce with pre-shared key and send it back to the host.
       decVal = auth.encrypt(nonce).decode('UTF8')
       ret = self.publishToHost(host, 'SUBSCRIBE ' + self.address[0] + ' ' + str(self.address[1]) + ' ' + self.group + ' ' + decVal)
@@ -275,15 +280,23 @@ class NetEvent(threading.Thread):
                return
      
       # we couldn't find the publisher in the local routing table.  perform a linear scan over the subnet.
-      found = False
       ip = self.getIP(self.interface)
       octets = ip.split('.')
+
+      # Maybe the localhost is the publisher.  Test that first.
       testOctet = int(octets[3])
+      address = octets[0] + '.' + octets[1] + '.' + self.publisherSubnet + '.' + str(testOctet)
+      if (self.testForPublisher(address)):
+         self.registerClient((address, 6667), self.group)
+         return
+      else:
+         testOctet = 1
+
+      found = False
       while (not found):
          address = octets[0] + '.' + octets[1] + '.' + self.publisherSubnet + '.' + str(testOctet)
          if (self.testForPublisher(address)):
             # this address is a publisher.  connect to it!
-            print("Found publisher at", address)
             self.registerClient((address, 6667), self.group)
             found = True
          else:
@@ -304,7 +317,7 @@ class NetEvent(threading.Thread):
          if (response == 'ADMIN'):
             return True
       except:
-         print("Error in connecting to", address)
+         pass
       s.close()
       return False
       
@@ -317,7 +330,6 @@ class NetEvent(threading.Thread):
       def handle(self):
          self.container = self.server._NetEventInstance
          self.data = self.request.recv(1024)
-         print("Received:", self.data.decode('UTF8'))
          websock = websocket(self.request)
          decodedData = ''
          ws = False
@@ -350,13 +362,14 @@ class NetEvent(threading.Thread):
          if (data[0] == 'EXECGROUP'):
             group = data[1]
             res = self.container.publishToGroup(group, data[2])
-            self.request.sendall(websock.encode(Opcode.text, res))
+            if (res != None):
+               self.request.sendall(websock.encode(Opcode.text, res))
          # check if the client is requesting data from a node
          elif (data[0] == 'EXECNODE'):
-            # we want to find the port used by IP address in data[1]
             node = (data[1], int(data[2]))
             res = self.container.publishToHost(node, data[3])
-            self.request.sendall(websock.encode(Opcode.text, res))
+            if (res != None):
+               self.request.sendall(websock.encode(Opcode.text, res))
          # check if the client is requesting a list of clusters available
          elif (data[0] == 'GROUPNAMES'):
             self.request.sendall(websock.encode(Opcode.text, self.container.getClusterList()))
