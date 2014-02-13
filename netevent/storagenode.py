@@ -8,6 +8,6 @@ def main():
    netEvent.findController()
 
 def getImagesInfo(params):
-   
+    return 0
 
 main()

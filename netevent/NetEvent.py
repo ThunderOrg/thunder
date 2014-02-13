@@ -1,258 +1,427 @@
 # NetEvent API for building cloud middleware.
 # Developed by Gabriel Jacob Loewen
-# Copyright 2013 Gabriel Jacob Loewen
+# The University of Alabama
+# Cloud and Cluster Computer Lab
+# Copyright 2014 Gabriel Jacob Loewen
 
-import socket, socketserver, threading, auth, time, events as builtinEvents
-from threading import Timer
+import auth, re, threading, socket, socketserver, sys, subprocess, events as builtinEvents
 from dictionary import *
-from datetime import datetime
+from websocket import *
 from time import sleep
 
-# Enable debugging output
-debug = True
+# ensure that the address used by the service can be reused if it crashes.
+socketserver.TCPServer.allow_reuse_address = True
 
-# Mapping from event name to function
-events = Dictionary()
+# default port of the server
+SERVER_PORT = 6667
 
-# Mapping from group name to list if clients
-clients = Dictionary()
+class NetEvent(threading.Thread):
+   def __init__(self, port = 0, interface = 'eth0', role = 'CLIENT', group = 'Cloud', publisherSubnet = '1'):
+      # invoke the constructor of the threading superclass
+      super(NetEvent, self).__init__()
 
-# Subscription identifier
-subscription = None
+      # set the interface variable, which is the interface that we want to bind the service to
+      self._interface = interface
 
-role = ""
+      # set the role ('CLIENT' | 'ADMIN')
+      self._role = role
 
-nonce = ""
+      # get the IP address of the system
+      self._IP = self.getIP(interface)
 
-group = ""
+      # create a TCP server, and bind it to the address of the desired interface
+      self._server = socketserver.TCPServer((self._IP, port), self.NetEventServer)
+      self._server._NetEventInstance = self
 
-# Retreive the private IP of this system
-def getIP():
-   s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-   s.connect(("google.com",80))
-   ip = s.getsockname()[0]
-   s.close();
-   return ip
-   #return socket.gethostbyname(socket.gethostname())
+      # workaround for getting the port number for auto-assigned ports (default behavior for clients)
+      self._port = self._server.server_address[1]
+      print("Binding to IP address - ", self._IP,":",port, sep='')
 
-# Main class for NetEvent
-class NetEvent():
+      # create a dictionary mapping an event name to a function
+      self._events = Dictionary()
 
-   # Constructor, creates the TCP server
-   def __init__(self, port = 0, r = "CLIENT"):
-      global role
-      global group
-      role = r
-      print(getIP())
-      self.server = socketserver.TCPServer((getIP(), port), EventHandler)
-      self.port = self.server.server_address[1]
-      self.server.isDaemon = True
-      self.start()
-      # Register some data aggregation events for cpu/ram utilization as well as general system info
+      # create a dictionary mapping a group name to an array of tuples (IP,Port)
+      # these tuples represent the clients that are connecting to this service
+      # if the role of this service is CLIENT then this dictionary should always be empty.
+      self._clients = Dictionary()
+
+      # register some builtin events for metadata aggregation
       self.registerEvent("UTILIZATION", builtinEvents.utilization)
       self.registerEvent("SYSINFO", builtinEvents.sysInfo)
 
-   # Retrieve a semicolon delimeted list of clusters
+      # associate with a group
+      self._group = group
+
+      # set the default publisher to None
+      self._publisher = None
+
+      # set the default publishers subnet
+      self._publisherSubnet = publisherSubnet
+
+      # set an initial nonce value.  this should always be updated when adding a new client.
+      self._nonce = ''
+
+      # start the thread
+      self.start()
+      return
+
+   # getters and setters
+   @property
+   def clients(self):
+      return self._clients
+   
+   @property
+   def events(self):
+      return self._events
+
+   @property
+   def interface(self):
+      return self._interface
+  
+   @property
+   def role(self):
+      return self._role
+  
+   @property
+   def address(self):
+      return (self._IP, self._port)
+  
+   @property
+   def group(self):
+      return self._group
+
+   @group.setter
+   def group(self, value):
+      self._group = value
+  
+   @property
+   def publisher(self):
+      return self._publisher
+
+   @publisher.setter
+   def publisher(self, value):
+      self._publisher = value
+  
+   @property
+   def publisherSubnet(self):
+      return self._publisherSubnet
+
+   # deconstructor
+   def __del__(self):
+      self.running = False
+      return
+
+   # retrieve a semicolon delimeted list of clusters
    def getClusterList(self):
-      global clients
       ret = ''
-      for cluster in clients.collection():
+      for cluster in self.clients.collection():
          ret += cluster + ';'
       return ret[:-1]
-
-   # Retrieve the current subscription
-   def getSubscription(self):
-      try:
-         return self.subscription
-      except AttributeError:
-         return -1
-
-   # Retrieve a colon delimeted list of clients
-   def getClientList(self):
-      global clients
+   
+   # Retrieve a semicolon delimeted list of clients
+   def getClientList(self, group):
       listString = ''
-      for group in clients:
-         clist = ''
-         for client in clients[group]:
-            clist += '(' + client[0] + ',' + client[1] + ');'
-         listString += group + ":" + clist
-      return listString
+      clist = ''
+      for client in self.clients.get(group):
+         clist += client[0] + ':' + str(client[1]) + ';';
+      return clist[:-1]
 
-   # Start thread for checking the controller node to ensure that it is still alive.
-   def startFaultTolerance(self):
-      self.lifeGuardThread = threading.Thread(target = self.lifeGuard)
-      self.lifeGuardThread.start()
+   # get the IP of the desired networking interface
+   def getIP(self, interface):
+      p = subprocess.Popen(['/sbin/ifconfig', interface.strip()], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+      ifconfig = p.communicate()[0]
+      if (ifconfig):
+         data = ifconfig.decode().split('\n')
+         for item in data:
+            item = item.strip()
+            if (item.startswith('inet ')):
+               return item.split(':')[1].split()[0]
+      return '127.0.0.1'
 
-   def lifeGuard(self):
-      global subscription
-      global group
-      alive = True
-      while(alive):
-         print("Checking host status")
-         if (subscription != None):
-            resp = self.publishToHost(subscription, "ALIVE")
-            if (resp == None):
-               alive = False
-         sleep(300)
-      print("Controller lost.  Starting search.")
-      self.findController()
-
-   # Start thread for handling requests
-   def start(self):
-      self.thread = threading.Thread(target = self.serve)
-      self.thread.start()
-      
-   # Continuously handles requests
-   def serve(self):
-      while 1:
-         self.server.handle_request()
-
-   # Register a possible event
-   # Name - name of event used as a key
-   # Event - function identifier bound to the event name
-   def registerEvent(self, name, event):
-      global events
-      events.append((name, event))
-
-   # Publish a message containing data to a specific host
+   # get the MAC address of the desired networking interface
+   def getMAC(self, interface):
+      p = subprocess.Popen(['/sbin/ifconfig', interface.strip()], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+      ifconfig = p.communicate()[0]
+      if (ifconfig):
+         data = ifconfig.decode().split('\n')
+         for item in data:
+            itemArr = item.strip().split()
+            found = False
+            for field in itemArr:
+               if (found):
+                  return field.strip()
+               elif (field.lower() == 'hwaddr'):
+                  found = True
+      return None
+ 
+   # inherited from threading.Thread
+   def run(self):
+      self.running = True
+      while (self.running):
+         self._server.handle_request()
+      self._server.shutdown()
+      return
+  
+   # send a message to another machine running the NetEvent service
    def publishToHost(self, host, data):
-      global group
-      global clients
-      global subscription
       try:
+         # open a socket connection
          s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
          s.connect(host)
-         # Send data
-         s.send(data.encode())
-         # Receive and process response
+         # encode the data before sending
+         s.send(data.encode('UTF8'))
+         # wait for a response from the host
          response = s.recv(1024).decode()
          s.close()
-         return '('+str(host[0])+':'+str(response)+')'
+         # return a colon delimited string containing the IP address of the host and its response
+         return host[0]+':'+str(response)
+        
+      # if for some reason the host rejects the message or is not sent properly then we need to
+      # remove that host from our list of clients as it has probably disconnected and is no
+      # longer available.
       except:
-         if (subscription == None or host[0] != subscription[0]):
-            rmGroups = []
-            for key in clients.collection():
-               ips = clients.get(key)
-               i = 0
-               while (i<len(ips)):
-                  if (ips[i][0] == host[0]):
-                     ips.pop(i)
-                     if (len(ips) == 0):
-                        rmGroups.append(key)
-                  i+=1
-            for grp in rmGroups:
-               clients.remove(grp)
+         print("Host",host,"unavailable.  deleting")
+         print(self.clients.collection())
+         for grp in self.clients.collection():
+            addresses = self.clients.get(grp)
+            for addr in addresses:
+               if (addr[0] == host[0] and addr[1] == host[1]):
+                  addresses.remove(addr)
+         print(self.clients.collection())
          return None
-                  
-   # Publish a message containing data to all clients
-   def publishToGroup(self, data, group):
-      global clients
-      responses = []
-      if (clients.contains(group)):
-         ipList = clients.get(group)
-         for ip in ipList:
-            val = self.publishToHost(ip, data)
-            if (val != None):
-               responses.append(val+';')
+  
+   # publish data to an entire group
+   def publishToGroup(self, group, data):
       ret = ''
-      for response in responses:
-         ret += response
-      return ret[:-1]
-
-   # Subscribe to a host
-   def subscribe(self, host, grp):
-      global getIP
-      global subscription
-      global aliveTimer
-      global group
-
-      group = grp
-      ip = getIP()
-      subscription = host
-      print(host)
-
-      nonce = self.publishToHost(host, "AUTH")
-      self.publishToHost(host, "SUBSCRIBE " + ip + " " + str(self.port) + " " + group + " " + auth.encrypt(nonce).decode("utf-8"))
-      self.startFaultTolerance()
-
-   def associateGroup(self, group):
-      self.group=group
- 
-   def findController(self):
-      global getIP
-      ip = getIP()
-      octets = ip.split(".")
-      testOctet = int(octets[3])
-      found = False
-
-      print("Searching for controller node", end="")
-      while (found == False):
-         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-         if (testOctet == 256):
-            testOctet = 0
-         s.settimeout(10)
-         address = octets[0] + '.' + octets[1] + '.1.' + str(testOctet)
-         try:
-            s.connect((address, 6667))
-            s.settimeout(None)
-            s.sendall("ROLE".encode())
-            response = s.recv(1024).decode()
-            if (response == "ADMIN"):
-               found = True
-         except socket.error:
-            print(".", end="")
-         s.close()
-         testOctet += 1
-
-      if (found == True):
-         print("\nController found at", address)
-         try:
-            self.subscribe((address, 6667), self.group)
-            return (address, 6667)
-         except AttributeError:
-            print("Please associate with a group first!")
-            return -1
+      if (self.clients.contains(group)):
+         addresses = self.clients.get(group)
+         for addr in addresses:
+            val = self.publishToHost(addr, data)
+            if (val != None):
+               ret += val+';'
+      if (len(ret) > 0):
+         return ret[:-1]
       else:
-         return -1
-
-class EventHandler(socketserver.BaseRequestHandler):
-   # Handle external requests
-   def handle(self):
-      global clients
-      global events
-      global role
-      global nonce
-      self.data = self.request.recv(1024).decode().split()
-      print(self.data)
-      # data[0] -> command
-      # data[1] ... data[n] -> args
-      if (events.contains(self.data[0])):
-         f = events.get(self.data[0])
-         params = []
-         for i in range(1, len(self.data), 1):
-            params.append(self.data[i])
-         response = f(params)
-         self.request.sendall(str(response).encode())
-      elif (self.data[0] == "ROLE"):
-         self.request.sendall(role.encode())
-      elif (self.data[0] == "AUTH"):
-         nonce = auth.generateNonce()
-         self.request.sendall(nonce.encode())
-      elif (self.data[0] == "SUBSCRIBE"):
-         r = self.data[4].encode("utf-8")
-         m = auth.decrypt(r).decode("utf-8")[1:-1].split(':')[1]
-         if (m == nonce):
-            print("Authenticated")
-            if (len(self.data) == 5): 
-               # The group exists
-               if (clients.contains(self.data[3])):
-                  c = clients.get(self.data[3])
-                  c.append((self.data[1], int(self.data[2])))
-               # The group does not exist
-               else:
-                  c = [(self.data[1], int(self.data[2]))]
-                  clients.append((self.data[3], c))
-      elif (self.data[0] == "ALIVE"):
-         self.request.sendall("Y".encode())
-
-      self.request.close()
+         return ''
+        
+   # register an event by adding it to a dictionary (NAME->EVENT)
+   def registerEvent(self, name, event):
+      self.events.append((name, event))
+      return
+   
+   # register client with a server (subscribe to a publisher)
+   def registerClient(self, host, group):    
+      # send an authorization request to the server.  The server should return a nonce value.
+      nonce = self.publishToHost(host, 'AUTH')
+      
+      # encrypt the nonce with pre-shared key and send it back to the host.
+      decVal = auth.encrypt(nonce).decode('UTF8')
+      ret = self.publishToHost(host, 'SUBSCRIBE ' + self.address[0] + ' ' + str(self.address[1]) + ' ' + self.group + ' ' + decVal)
+     
+      # save the IP of the publisher.
+      self.publisher = host
+     
+      # start a heartbeat for fault tolerance
+      self.startHeartBeat()
+      return
+   
+   # spin up another thread that will periodically ping the server to make sure that it is still alive.
+   def startHeartBeat(self):
+      self._heartBeatThread = threading.Thread(target = self.heartBeat)
+      self._heartBeatThread.start()
+      return
+    
+   # send a 'pulse' to the publisher.  If the publisher doesn't respond then maybe its IP has changed
+   # in which case we can try to connect to it again by polling addresses on the network.
+   def heartBeat(self):
+      # if there is no publisher to ping then something bad happened.
+      if (self.publisher == None):
+         self.findPublisher()
+         return
+      
+      alive = True
+      while (alive):
+         ret = self.publishToHost(self.publisher, "HEARTBEAT")
+         if (ret == None):
+            alive = False
+        
+         sleep(300)
+      self.findPublisher()
+      return
+   
+   # parse the local IP routing table for entries
+   def ipRouteList(self):
+      addresses = []
+      p = subprocess.Popen(['/sbin/ip', 'route', 'list'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+      iptable = p.communicate()[0]
+      if (iptable):
+         data = iptable.decode().split('\n')
+         for line in data:
+            lineArr = line.split()
+            for i in range(0, len(lineArr), 1):
+               if (lineArr[i].strip().lower == 'src'):
+                  addresses += [lineArr[i+1]]
+      return addresses
+     
+   # Attempt to locate a publisher (controller) on the network. 
+   def findPublisher(self):
+      # first load the ip addresses from the local iptables and try them.
+      routingTable = self.ipRouteList()
+      if (len(routingTable) > 0):
+         for address in routingTable:
+            if (self.testForPublisher(address)):
+               # this address is a publisher. connect to it!
+               self.registerClient((address, 6667), self.group)
+               return
+     
+      # we couldn't find the publisher in the local routing table.  perform a linear scan over the subnet.
+      found = False
+      ip = self.getIP(self.interface)
+      octets = ip.split('.')
+      testOctet = int(octets[3])
+      while (not found):
+         address = octets[0] + '.' + octets[1] + '.' + self.publisherSubnet + '.' + str(testOctet)
+         if (self.testForPublisher(address)):
+            # this address is a publisher.  connect to it!
+            print("Found publisher at", address)
+            self.registerClient((address, 6667), self.group)
+            found = True
+         else:
+            testOctet+=1
+            if (testOctet > 255):
+               testOctet = 0
+      return
+   
+   # test a particular address for liveness and an administrative role
+   def testForPublisher(self, address):
+      s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+      s.settimeout(10)
+      try:
+         s.connect((address, SERVER_PORT))
+         s.settimeout(None)
+         s.sendall('ROLE'.encode('UTF8'))
+         response = s.recv(6).decode('UTF8')
+         if (response == 'ADMIN'):
+            return True
+      except:
+         print("Error in connecting to", address)
+      s.close()
+      return False
+      
+   # Handler class for handling incoming connections
+   class NetEventServer(socketserver.BaseRequestHandler):
+      def setup(self):
+         self.request.setsockopt(socket.IPPROTO_TCP,socket.TCP_NODELAY, True)
+         return
+      
+      def handle(self):
+         self.container = self.server._NetEventInstance
+         self.data = self.request.recv(1024)
+         print("Received:", self.data.decode('UTF8'))
+         websock = websocket(self.request)
+         decodedData = ''
+         ws = False
+        
+         # Check to see if the data is coming over a websocket connection (cloud interface)
+         if (websock.isHandshakePending(self.data)):
+            handshake = websock.handshake(self.data.decode())
+            self.request.sendall(handshake)
+            decodedData = websock.decode().strip()
+            ws = True
+         # Else, it could be coming from a peer (cloud server)
+         else:
+            decodedData = self.data.decode('UTF8').strip()
+        
+         # if there is data waiting to be processed then process it!
+         if (decodedData != ''):
+            if (ws):
+               self.processWebsocketRequest(decodedData.split(), websock)
+            else:
+               self.processTraditionalRequest(decodedData.split())
+              
+         # close the connection
+         self.request.close()
+         return
+      
+      # the data is coming from the web interface.  the web interface should only be able to retrieve data from clusters and request virtual machines
+      def processWebsocketRequest(self, data, websock):
+         clients = self.container.clients
+         # check if the client is requesting data from a group
+         if (data[0] == 'EXECGROUP'):
+            group = data[1]
+            res = self.container.publishToGroup(group, data[2])
+            self.request.sendall(websock.encode(Opcode.text, res))
+         # check if the client is requesting data from a node
+         elif (data[0] == 'EXECNODE'):
+            # we want to find the port used by IP address in data[1]
+            node = (data[1], int(data[2]))
+            res = self.container.publishToHost(node, data[3])
+            self.request.sendall(websock.encode(Opcode.text, res))
+         # check if the client is requesting a list of clusters available
+         elif (data[0] == 'GROUPNAMES'):
+            self.request.sendall(websock.encode(Opcode.text, self.container.getClusterList()))
+         # check if the client is requesting a list of nodes in a particular cluster
+         elif (data[0] == 'NODESINGROUP'):
+            self.request.sendall(websock.encode(Opcode.text, self.container.getClientList(data[1])))
+         # for debugging purposes, lets print out the data for all other cases
+         else:
+            print(data)
+         return
+        
+      def processTraditionalRequest(self, data):
+         events = self.container.events
+         clients = self.container.clients
+        
+         # check if the request is an event call
+         if (events.contains(data[0])):
+            func = events.get(data[0])
+            params = []
+            for i in range(1, len(data), 1):
+               params += [data[i]]
+              
+            # call the function and get the result
+            response = func(params)
+ 
+            # send the result to the caller
+            self.request.sendall(str(response).encode('UTF8'))
+        
+         # check if the request is a query for the service role (ADMIN | CLIENT)
+         elif (data[0] == 'ROLE'):
+            self.request.sendall(self.container.role.encode('UTF8'))
+        
+         # check if the caller is requesting a nonce for authorization
+         elif (data[0] == 'AUTH'):
+            nonce = auth.generateNonce()
+            self.container._nonce = nonce
+            self.request.sendall(nonce.encode('UTF8'))
+          
+         # check if the caller is requesting authorization for subscription
+         elif (data[0] == 'SUBSCRIBE'):
+            r = data[4].encode('UTF8')
+            m = auth.decrypt(r).decode('UTF8')[1:].split(':')[1]
+            if (m == self.container._nonce):
+               # we can consider this subscriber to be authentic
+               if (len(data) == 5): # should be 5 values
+                  # data[3] is the group name
+                  if (clients.contains(data[3])):
+                     c = clients.get(data[3])
+                     c.append((data[1], int(data[2])))
+                  else:
+                     c = [(data[1], int(data[2]))]
+                     clients.append((data[3], c))
+        
+         # check if the caller is sending a heartbeat           
+         elif (data[0] == 'ALIVE'):
+            self.request.sendall(data[0].encode('UTF8'))
+        
+         return
+      
+if (__name__ == "__main__"):
+   ne = NetEvent(6667, 'eth0', 'ADMIN')
+   #msg = ''
+   #while (msg != 'done'):
+   #   s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+   #   s.connect(('127.0.0.1',6667))
+   #   msg = input("enter a msg: ")
+   #   s.send(msg.encode('utf-8'))
+   #   s.close()

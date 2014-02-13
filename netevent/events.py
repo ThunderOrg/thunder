@@ -17,7 +17,6 @@ def utilization(params):
    fifteenMin = data[2]
 
    retVal = memtotal + ":" + memfree + ":" + oneMin + ":" + fiveMin + ":" + fifteenMin
-   print(retVal)
    return retVal
 
 def sysInfo(params):
@@ -30,5 +29,4 @@ def sysInfo(params):
    arch = os.uname()[4]
 
    retVal = shortOsName + " (" + fullOsName + "):" + kernel + ":" + arch
-   print(retVal)
    return retVal
