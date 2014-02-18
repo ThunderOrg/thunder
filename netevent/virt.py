@@ -1,5 +1,4 @@
-import libvirt
-import sys
+import libvirt, sys, tarfile, uuid
 
 def connect():
    conn = libvirt.open('qemu:///system')
@@ -9,23 +8,37 @@ def connect():
 
    return conn
 
-def mountVMPool(conn, hostname, sharename = "virtimages"):
+def mountVMPool(conn, hostname, sharename):
    try:
-      vmpool = conn.storagePoolLookupByName("virtimages")
+      vmpool = conn.storagePoolLookupByName(sharename)
       if (vmpool.isActive()):
          vmpool.destroy()
       vmpool.undefine()
    except libvirt.libvirtError as err:
       print err
+   
+   target = "/thunderImg/" + sharename
+   createTarget(target)
 
-   vmpool = conn.storagePoolDefineXML(getImagePoolSpec(hostname,sharename,"/var/lib/libvirt/images/"),0)
+   vmpool = conn.storagePoolDefineXML(getImagePoolSpec(hostname,sharename,target),0)
    vmpool.setAutostart(True)
    ret = vmpool.create(0)
-   print ret
+   
+   # The storage pool was created.
    if (ret==0):
-      return vmpool
+      return vmpool, target
    else:
       sys.exit(-1)
+
+def getImageList(directory):
+   specList = []
+   dirList = os.listdir(directory)
+   for item in dirList:
+      if (path.isfile(item) and item.endswidth(".spec")):
+         specList += [item]
+
+   # speclist contains all specification files.
+   return specList
 
 def instantiate(conn, domain):
    try:
@@ -39,7 +52,7 @@ def instantiate(conn, domain):
 def getImagePoolSpec(host,dir_path,target_path):
    # Setup image pool XML specification
    image_pool_xml = """   <pool type=\"netfs\">
-     <name>virtimages</name>
+     <name>""" + dir_path + """</name>
      <source>
        <host name=\"""" + host + """\"/>
        <dir path=\"""" + dir_path + """\"/>
@@ -51,6 +64,33 @@ def getImagePoolSpec(host,dir_path,target_path):
    </pool>"""
    return image_pool_xml
 
+def createTarget(path):
+   try:
+      os.makedirs(path)
+   except OSError as exception:
+      if exception.errno != errno.EEXIST:
+         raise
+
+def setup(target):
+   path = "/var/lib/libvirt/images/"
+   tar = tarfile.open(target, 'r')
+   for item in tar:
+      if (item.endswith
+      tar.extract(item, path)
+
+   # install the image in libvirt
+  
+hostname = sys.argv[1]
+sharename = sys.argv[2]
+domain = sys.argv[3]
 conn = connect()
-pool = mountVMPool(conn, sys.argv[1], sys.argv[2])
-instantiate(conn, sys.argv[3])
+
+pool, target = mountVMPool(conn, hostname, sharename)
+specs = getImageList(target)
+
+if (domain+'.spec' in specs):
+   # Copy tarball of domain into /var/lib/libvirt/images and unpack
+   # into a unique directory. Then install the domain into libvirt.
+   setup(target + "/" + domain + ".tgz")
+
+instantiate(conn, domain)
