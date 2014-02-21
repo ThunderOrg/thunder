@@ -14,3 +14,4 @@ if [[ -e $FNAME.$EXT ]]; then
 fi
 
 tar -czf $FNAME.$EXT -C / var/www
+git add $FNAME.$EXT
