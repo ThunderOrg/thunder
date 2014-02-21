@@ -1,5 +1,7 @@
-# auth.py
 # A component of the NetEvent cloud middleware dealing with node authentication.
+# Developed by Gabriel Jacob Loewen
+# The University of Alabama
+# Cloud and Cluster Computer Lab
 # Copyright 2014 Gabriel Jacob Loewen
 
 import base64
