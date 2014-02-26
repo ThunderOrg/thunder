@@ -57,7 +57,7 @@ d-i     finish-install/reboot_in_progress       note
 d-i     cdrom-detect/eject      boolean true
 d-i     debian-installer/exit/halt      boolean false
 d-i     debian-installer/exit/poweroff  boolean false
-d-i     pkgsel/include string byobu vim openssh-server
+d-i     pkgsel/include string byobu vim openssh-server python3 python3-crypto
 byobu   byobu/launch-by-default boolean true
 d-i preseed/late_command string true && \
 $SNIPPET('kickstart_done') & \
