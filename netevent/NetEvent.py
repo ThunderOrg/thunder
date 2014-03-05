@@ -376,6 +376,18 @@ class NetEvent(threading.Thread):
          # check if the client is requesting a list of nodes in a particular cluster
          elif (data[0] == 'NODESINGROUP'):
             self.request.sendall(websock.encode(Opcode.text, self.container.getClientList(data[1])))
+         # check if the client is requesting the server to poll for mac addresses, used for deployment
+         elif (data[0] == 'POLLMACS'):
+            p = subprocess.Popen(['./macdump.sh', int(data[1]), self.container.interface], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            p.communicate()[0]
+            fp = open("./mac.list", "r")
+            macList = fp.readlines()
+            fp.close()
+            result = ''
+            for i in range(0, len(macList), 1):
+                result+=macList[i] + ";"
+            self.request.sendall(websock.encode(Opcode.text, result[:-1]))
+ 
          # for debugging purposes, lets print out the data for all other cases
          else:
             print(data)
