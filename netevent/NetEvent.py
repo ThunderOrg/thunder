@@ -294,7 +294,12 @@ class NetEvent(threading.Thread):
 
       found = False
       while (not found):
-         address = octets[0] + '.' + octets[1] + '.' + self.publisherSubnet + '.' + str(testOctet)
+
+         address = octets[0] + '.' + \
+                   octets[1] + '.' + \
+                   self.publisherSubnet + '.' + \
+                   str(testOctet)
+
          if (self.testForPublisher(address)):
             # this address is a publisher.  connect to it!
             self.registerClient((address, 6667), self.group)
@@ -355,7 +360,8 @@ class NetEvent(threading.Thread):
          self.request.close()
          return
       
-      # the data is coming from the web interface.  the web interface should only be able to retrieve data from clusters and request virtual machines
+      # the data is coming from the web interface.  the web interface should only
+      # be able to retrieve data from clusters and request virtual machines
       def processWebsocketRequest(self, data, websock):
          clients = self.container.clients
          # check if the client is requesting data from a group
@@ -364,28 +370,35 @@ class NetEvent(threading.Thread):
             res = self.container.publishToGroup(group, data[2])
             if (res != None):
                self.request.sendall(websock.encode(Opcode.text, res))
+
          # check if the client is requesting data from a node
          elif (data[0] == 'EXECNODE'):
             node = (data[1], int(data[2]))
             res = self.container.publishToHost(node, data[3])
             if (res != None):
                self.request.sendall(websock.encode(Opcode.text, res))
+
          # check if the client is requesting a list of clusters available
          elif (data[0] == 'GROUPNAMES'):
             self.request.sendall(websock.encode(Opcode.text, self.container.getClusterList()))
+
          # check if the client is requesting a list of nodes in a particular cluster
          elif (data[0] == 'NODESINGROUP'):
-            self.request.sendall(websock.encode(Opcode.text, self.container.getClientList(data[1])))
-         # check if the client is requesting the server to poll for mac addresses, used for deployment
+            clients = self.container.getClientList(data[1])
+            self.request.sendall(websock.encode(Opcode.text, clients))
+
+         # check if the client is requesting the server to poll for mac addresses,
+         # used for deployment
          elif (data[0] == 'POLLMACS'):
-            p = subprocess.Popen(['./macdump.sh', int(data[1]), self.container.interface], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            iface = self.container.interface
+            fname = ['./macdump.sh', int(data[1]), iface]
+            p = subprocess.Popen(fname, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             p.communicate()[0]
             fp = open("./mac.list", "r")
-            macList = fp.readlines()
-            fp.close()
             result = ''
-            for i in range(0, len(macList), 1):
-                result+=macList[i] + ";"
+            for line in fp:
+                result+=line.strip() + ";"
+            fp.close()
             self.request.sendall(websock.encode(Opcode.text, result[:-1]))
  
          # for debugging purposes, lets print out the data for all other cases
@@ -440,13 +453,3 @@ class NetEvent(threading.Thread):
             self.request.sendall(data[0].encode('UTF8'))
         
          return
-      
-if (__name__ == "__main__"):
-   ne = NetEvent(6667, 'eth0', 'ADMIN')
-   #msg = ''
-   #while (msg != 'done'):
-   #   s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-   #   s.connect(('127.0.0.1',6667))
-   #   msg = input("enter a msg: ")
-   #   s.send(msg.encode('utf-8'))
-   #   s.close()
