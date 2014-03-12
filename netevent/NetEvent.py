@@ -13,7 +13,7 @@ from time import sleep
 socketserver.TCPServer.allow_reuse_address = True
 
 # default port of the server
-SERVER_PORT = 6667
+SERVER_PORT = 49687
 
 class NetEvent(threading.Thread):
    def __init__(self, port = 0, interface = 'eth0', role = 'CLIENT', group = 'Cloud', publisherSubnet = '1'):
