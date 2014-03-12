@@ -7,4 +7,4 @@ CREATE TABLE IF NOT EXISTS user
       password	VARCHAR(100),
       username	VARCHAR(100),
       PRIMARY KEY (username));
-INSERT INTO user VALUES('Default', 'Admin', 'SUPERUSER', '49eff747f7b66f70133bfe00aa8ac2d6b0fbee5be80e52537b0163f147d20418', 'admin');
+INSERT INTO user VALUES('Default', 'Admin', 'SUPERUSER', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'admin');
