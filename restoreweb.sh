@@ -15,3 +15,5 @@ rm -r /var/www/*
 
 echo "Restoring backup: $LATEST"
 tar -xzf $DIR/$LATEST -C /var/www/
+
+chown -R thunder:thunder /var/www
