@@ -10,7 +10,8 @@ if [ $# -eq 1 ]
 then
    sed "s/<IP>/$1/g" preseed.sql > tmp
 else
-   cat preseed.sql > tmp
+   echo You must enter a NAS IP address!
+   exit
 fi
 mysql -f -uroot -p < tmp
 rm tmp

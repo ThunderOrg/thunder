@@ -14,5 +14,5 @@ CREATE TABLE IF NOT EXISTS nodes
       type	VARCHAR(100),
       PRIMARY KEY (name));
 
-INSERT INTO user VALUES('Default', 'Admin', 'SUPERUSER', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'admin');
-INSERT INTO nodes VALUES('NAS', '<IP>', 'STORAGE') on duplicate key update address='<IP>';
+INSERT INTO user VALUES('Default', 'Admin', 'SUPERUSER', '49eff747f7b66f70133bfe00aa8ac2d6b0fbee5be80e52537b0163f147d20418', 'admin') on duplicate key UPDATE username=username;
+INSERT INTO nodes VALUES('NAS', '<IP>', 'STORAGE') on duplicate key UPDATE address='<IP>';
