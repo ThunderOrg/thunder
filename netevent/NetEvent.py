@@ -4,7 +4,7 @@
 # Cloud and Cluster Computer Lab
 # Copyright 2014 Gabriel Jacob Loewen
 
-import auth, re, threading, socket, socketserver, sys, subprocess, events as builtinEvents
+import auth, re, mysql.connector, threading, socket, socketserver, sys, subprocess, events as builtinEvents
 from dictionary import *
 from websocket import *
 from time import sleep
@@ -400,6 +400,18 @@ class NetEvent(threading.Thread):
                 result+=line.strip() + ";"
             fp.close()
             self.request.sendall(websock.encode(Opcode.text, result[:-1]))
+
+         elif (data[0] == 'GETIMAGES'):
+            conn = mysql.connector.connect(user='root', password='thunder', host='localhost', db='thunder')
+            cur = conn.cursor()
+            cur.execute("SELECT address FROM node WHERE name='NAS';") 
+            res = cur.fetchone()
+            cur.close()
+            conn.close()
+            if (res != None):
+               # address of NAS
+               addr = res[0]
+               # mount share, create listing of images
  
          # for debugging purposes, lets print out the data for all other cases
          else:
