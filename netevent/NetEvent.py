@@ -402,16 +402,12 @@ class NetEvent(threading.Thread):
             self.request.sendall(websock.encode(Opcode.text, result[:-1]))
 
          elif (data[0] == 'GETIMAGES'):
-            conn = mysql.connector.connect(user='root', password='thunder', host='localhost', db='thunder')
-            cur = conn.cursor()
-            cur.execute("SELECT address FROM node WHERE name='NAS';") 
-            res = cur.fetchone()
-            cur.close()
-            conn.close()
-            if (res != None):
-               # address of NAS
-               addr = res[0]
-               # mount share, create listing of images
+            nasAddr = getNASAddress()
+            if (nasAddr != None):
+               # mount NAS images repo
+               # store image listing in array
+               # unmount NAS
+               pass
  
          # for debugging purposes, lets print out the data for all other cases
          else:
