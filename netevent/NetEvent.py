@@ -35,7 +35,7 @@ class NetEvent(threading.Thread):
 
       # workaround for getting the port number for auto-assigned ports (default behavior for clients)
       self._port = self._server.server_address[1]
-      print("Binding to IP address - ", self._IP,":",port, sep='')
+      print("Binding to IP address - ", self._IP,":",self._port, sep='')
 
       # create a dictionary mapping an event name to a function
       self._events = Dictionary()
@@ -270,13 +270,15 @@ class NetEvent(threading.Thread):
      
    # Attempt to locate a publisher (controller) on the network. 
    def findPublisher(self):
+      print("Looking for publisher")
       # first load the ip addresses from the local iptables and try them.
       routingTable = self.ipRouteList()
       if (len(routingTable) > 0):
          for address in routingTable:
             if (self.testForPublisher(address)):
                # this address is a publisher. connect to it!
-               self.registerClient((address, 6667), self.group)
+               print("Found at", address)
+               self.registerClient((address, SERVER_PORT), self.group)
                return
      
       # we couldn't find the publisher in the local routing table.  perform a linear scan over the subnet.
@@ -287,22 +289,22 @@ class NetEvent(threading.Thread):
       testOctet = int(octets[3])
       address = octets[0] + '.' + octets[1] + '.' + self.publisherSubnet + '.' + str(testOctet)
       if (self.testForPublisher(address)):
-         self.registerClient((address, 6667), self.group)
+         self.registerClient((address, SERVER_PORT), self.group)
          return
       else:
          testOctet = 1
 
+      print("Testing", address)
       found = False
       while (not found):
-
          address = octets[0] + '.' + \
                    octets[1] + '.' + \
                    self.publisherSubnet + '.' + \
                    str(testOctet)
-
+         print("Testing", address)
          if (self.testForPublisher(address)):
             # this address is a publisher.  connect to it!
-            self.registerClient((address, 6667), self.group)
+            self.registerClient((address, SERVER_PORT), self.group)
             found = True
          else:
             testOctet+=1
@@ -338,7 +340,9 @@ class NetEvent(threading.Thread):
          websock = websocket(self.request)
          decodedData = ''
          ws = False
-        
+       
+         print(self.data)
+ 
          # Check to see if the data is coming over a websocket connection (cloud interface)
          if (websock.isHandshakePending(self.data)):
             handshake = websock.handshake(self.data.decode())
