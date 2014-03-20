@@ -4,7 +4,7 @@ from subprocess import call
 #import libvirt
 
 def main():
-   netEvent = NetEvent(0,'eth0','CLIENT','PRIMARY_COMPUTE')
+   netEvent = NetEvent(0,'eth0','CLIENT','PRIMARY_COMPUTE','0')
    #netEvent.registerEvent("INSTANTIATE", instantiate)
    netEvent.findPublisher()
 
