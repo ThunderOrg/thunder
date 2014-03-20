@@ -15,26 +15,28 @@ from config import *
 socketserver.TCPServer.allow_reuse_address = True
 
 # parse thunder config file
-config.parseConfig('thunder.conf')
+parseConfig('thunder.conf')
 
 # default port of the server
 SERVER_PORT = int(constants.get('server.port'))
 
 class ThunderRPC(threading.Thread):
-   def __init__(self,
-                interface = constants.get('default.interface'), 
-                role = constants.get('default.role'), 
-                group = constants.get('default.group')):
+   def __init__(self, role = constants.get('default.role'), group = constants.get('default.group')):
 
       # invoke the constructor of the threading superclass
       super(ThunderRPC, self).__init__()
+
+      if (role == 'PUBLISHER'):
+          interface = constants.get('server.interface'), 
+      else:
+          interface = constants.get('default.interface'), 
 
       # set the interface variable, which is the interface that we want to bind the service to
       self._interface = interface
 
       # set the role ('PUBLISHER' | 'SUBSCRIBER')
       self._role = role
-
+      
       # get the IP address of the system
       self._IP = self.getIP(interface)
 

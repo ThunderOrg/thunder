@@ -23,5 +23,5 @@ def invoke(params):
       return -1
 
 # Instantiate NetEvent and register the invoke event
-server = ThunderRPC(role = 'PUBLISHER')
+server = ThunderRPC(role = 'PUBLISHER', group = "Cloud")
 server.registerEvent("INVOKE", invoke)
