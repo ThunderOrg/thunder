@@ -5,10 +5,11 @@
 
 # TODO:  Break this into Server/Client modules
 
-import config, auth, re, mysql.connector, threading, socket, socketserver, sys, subprocess, events as builtinEvents
+import auth, re, mysql.connector, threading, socket, socketserver, sys, subprocess, events as builtinEvents
 from dictionary import *
 from websocket import *
 from time import sleep
+from config import *
 
 # ensure that the address used by the service can be reused if it crashes.
 socketserver.TCPServer.allow_reuse_address = True
@@ -17,15 +18,13 @@ socketserver.TCPServer.allow_reuse_address = True
 config.parseConfig('thunder.conf')
 
 # default port of the server
-SERVER_PORT = int(config.constants.get('server.port'))
+SERVER_PORT = int(constants.get('server.port'))
 
 class ThunderRPC(threading.Thread):
-   def __init__(self, 
-                port = int(config.constants.get('default.port')),
-                interface = config.constants.get('default.interface'), 
-                role = config.constants.get('default.role'), 
-                group = config.constants.get('default.group'),
-                publisherSubnet = config.constants.get('server.subnet')):
+   def __init__(self,
+                interface = constants.get('default.interface'), 
+                role = constants.get('default.role'), 
+                group = constants.get('default.group')):
 
       # invoke the constructor of the threading superclass
       super(ThunderRPC, self).__init__()
@@ -33,11 +32,14 @@ class ThunderRPC(threading.Thread):
       # set the interface variable, which is the interface that we want to bind the service to
       self._interface = interface
 
-      # set the role ('CLIENT' | 'ADMIN')
+      # set the role ('PUBLISHER' | 'SUBSCRIBER')
       self._role = role
 
       # get the IP address of the system
       self._IP = self.getIP(interface)
+
+      # use the port from the config file
+      port = int(constants.get('default.port'))
 
       # create a TCP server, and bind it to the address of the desired interface
       self._server = socketserver.TCPServer((self._IP, port), self.ThunderRPCServer)
@@ -52,7 +54,7 @@ class ThunderRPC(threading.Thread):
 
       # create a dictionary mapping a group name to an array of tuples (IP,Port)
       # these tuples represent the clients that are connecting to this service
-      # if the role of this service is CLIENT then this dictionary should always be empty.
+      # if the role of this service is SUBSCRIBER then this dictionary should always be empty.
       self._clients = Dictionary()
 
       # register some builtin events for metadata aggregation
@@ -66,7 +68,7 @@ class ThunderRPC(threading.Thread):
       self._publisher = None
 
       # set the default publishers subnet
-      self._publisherSubnet = publisherSubnet
+      self._publisherSubnet = constants.get('server.subnet')
 
       # set an initial nonce value.  this should always be updated when adding a new client.
       self._nonce = ''
@@ -262,7 +264,7 @@ class ThunderRPC(threading.Thread):
          if (ret == None):
             alive = False
        
-         sleep(int(config.constants.get('heartbeat.interval')))
+         sleep(int(constants.get('heartbeat.interval')))
       self.findPublisher()
       return
    
@@ -323,13 +325,13 @@ class ThunderRPC(threading.Thread):
    # test a particular address for liveness and an administrative role
    def testForPublisher(self, address):
       s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-      s.settimeout(int(config.constants.get('timeout.publishertest')))
+      s.settimeout(int(constants.get('timeout.publishertest')))
       try:
          s.connect((address, SERVER_PORT))
          s.settimeout(None)
          s.sendall('ROLE'.encode('UTF8'))
-         response = s.recv(6).decode('UTF8')
-         if (response == 'ADMIN'):
+         response = s.recv(9).decode('UTF8')
+         if (response == 'PUBLISHER'):
             return True
       except:
          pass
@@ -443,7 +445,7 @@ class ThunderRPC(threading.Thread):
             # send the result to the caller
             self.request.sendall(str(response).encode('UTF8'))
         
-         # check if the request is a query for the service role (ADMIN | CLIENT)
+         # check if the request is a query for the service role (PUBLISHER | SUBSCRIBER)
          elif (data[0] == 'ROLE'):
             self.request.sendall(self.container.role.encode('UTF8'))
         
