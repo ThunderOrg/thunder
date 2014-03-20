@@ -1,12 +1,16 @@
-Preconditions:
-Disable firewall.  This can be done with command: sudo ufw disable if running ubuntu server.
+Naming scheme and responsibility of controllers:
 
-Python3, and Python3-crypto packages must be installed.
+Cloud Controller (Zeus):
+	ThunderRPC master
+	NAT Router
+	MySQL server
+	Apache2 Webserver
+	DNS server
+	VPN server
 
-On controller node:
-Execute controller service:
-python3 server.py
+Virtualization Controller (Thor):
+	ThunderRPC client
+	XEN / KVM host
 
-On each compute node:
-Execute compute node service:
-python3 computenode.py
+Storage Controller (Indra):
+	NAS host (NFS and Samba)
