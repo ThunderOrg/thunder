@@ -1,16 +1,22 @@
-Naming scheme and responsibility of controllers:
+<h2>Naming scheme and responsibility of Thunder services</h2>
 
-Cloud Controller (Zeus):
-	ThunderRPC master
-	NAT Router
-	MySQL server
-	Apache2 Webserver
-	DNS server
-	VPN server
+<h3>Cloud Controller (Zeus)</h3>
+<ul>
+<li>ThunderRPC publisher</li>
+<li>NAT Router</li>
+<li>MySQL server</li>
+<li>Apache2 Webserver</li>
+<li>DNS server</li>
+<li>VPN server</li>
+</ul>
 
-Virtualization Controller (Thor):
-	ThunderRPC client
-	XEN / KVM host
+<h3>Virtualization Controller (Thor)</h3>
+<ul>
+<li>ThunderRPC client</li>
+<li>XEN / KVM host</li>
+</ul>
 
-Storage Controller (Indra):
-	NAS host (NFS and Samba)
+<h3>Storage Controller (Indra)</h3>
+<ul>
+<li>NAS host (NFS and Samba)</li>
+</ul>
