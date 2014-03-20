@@ -1,8 +1,7 @@
-# Remote Procedure Call (RPC) API for building cloud middleware.
+# ThunderRPC.py - Remote Procedure Call (RPC) API for building cloud middleware.
 # Developed by Gabriel Jacob Loewen
 # The University of Alabama
-# Cloud and Cluster Computer Lab
-# Copyright 2014 Gabriel Jacob Loewen
+# Cloud and Cluster Computer Group
 
 # TODO:  Break this into Server/Client modules
 
@@ -41,7 +40,7 @@ class ThunderRPC(threading.Thread):
       self._IP = self.getIP(interface)
 
       # create a TCP server, and bind it to the address of the desired interface
-      self._server = socketserver.TCPServer((self._IP, port), self.RPCServer)
+      self._server = socketserver.TCPServer((self._IP, port), self.ThunderRPCServer)
       self._server._ThunderRPCInstance = self
 
       # workaround for getting the port number for auto-assigned ports (default behavior for clients)
@@ -283,14 +282,12 @@ class ThunderRPC(threading.Thread):
      
    # Attempt to locate a publisher (controller) on the network. 
    def findPublisher(self):
-      print("Looking for publisher")
       # first load the ip addresses from the local iptables and try them.
       routingTable = self.ipRouteList()
       if (len(routingTable) > 0):
          for address in routingTable:
             if (self.testForPublisher(address)):
                # this address is a publisher. connect to it!
-               print("Found at", address)
                self.registerClient((address, SERVER_PORT), self.group)
                return
      
@@ -307,14 +304,12 @@ class ThunderRPC(threading.Thread):
       else:
          testOctet = 1
 
-      print("Testing", address)
       found = False
       while (not found):
          address = octets[0] + '.' + \
                    octets[1] + '.' + \
                    self.publisherSubnet + '.' + \
                    str(testOctet)
-         print("Testing", address)
          if (self.testForPublisher(address)):
             # this address is a publisher.  connect to it!
             self.registerClient((address, SERVER_PORT), self.group)
