@@ -5,7 +5,8 @@
 
 # TODO:  Break this into Server/Client modules
 
-import auth, re, mysql.connector, threading, socket, socketserver, sys, subprocess, events as builtinEvents
+import auth, re, mysql.connector, threading, socket, socketserver, sys, subprocess
+import events as builtinEvents
 from dictionary import *
 from websocket import *
 from time import sleep
@@ -26,10 +27,16 @@ class ThunderRPC(threading.Thread):
       # invoke the constructor of the threading superclass
       super(ThunderRPC, self).__init__()
 
+      # check the role of the service to determine the proper configuration
       if (role == 'PUBLISHER'):
-          interface = constants.get('server.interface'), 
+          interface = constants.get('server.interface') 
+          port = SERVER_PORT
+      elif (role == 'SUBSCRIBER'):
+          interface = constants.get('default.interface') 
+          port = int(constants.get('default.port'))
       else:
-          interface = constants.get('default.interface'), 
+          print("Invalid role identifer.  Must be either 'PUBLISHER' or 'SUBSCRIBER'")
+          sys.exit(-1)
 
       # set the interface variable, which is the interface that we want to bind the service to
       self._interface = interface
@@ -40,16 +47,12 @@ class ThunderRPC(threading.Thread):
       # get the IP address of the system
       self._IP = self.getIP(interface)
 
-      # use the port from the config file
-      port = int(constants.get('default.port'))
-
       # create a TCP server, and bind it to the address of the desired interface
       self._server = socketserver.TCPServer((self._IP, port), self.ThunderRPCServer)
       self._server._ThunderRPCInstance = self
 
       # workaround for getting the port number for auto-assigned ports (default behavior for clients)
       self._port = self._server.server_address[1]
-      print("Binding to IP address - ", self._IP,":",self._port, sep='')
 
       # create a dictionary mapping an event name to a function
       self._events = Dictionary()
@@ -58,6 +61,10 @@ class ThunderRPC(threading.Thread):
       # these tuples represent the clients that are connecting to this service
       # if the role of this service is SUBSCRIBER then this dictionary should always be empty.
       self._clients = Dictionary()
+
+      print("Starting ThunderRPC Service (role = %s)" % role)
+      print("-------------------------------------------------")
+      print("Binding to IP address - %s:%s" % (self._IP, self._port))
 
       # register some builtin events for metadata aggregation
       self.registerEvent("UTILIZATION", builtinEvents.utilization)
@@ -75,8 +82,14 @@ class ThunderRPC(threading.Thread):
       # set an initial nonce value.  this should always be updated when adding a new client.
       self._nonce = ''
 
+      if (role == 'PUBLISHER'):
+          # startup a multicasting thread to respond to multicast messages
+          self.mcastThread = threading.Thread(target = self.multicastThread)
+          self.mcastThread.start()
+
       # start the thread
       self.start()
+
       return
 
    # getters and setters
@@ -124,6 +137,58 @@ class ThunderRPC(threading.Thread):
    def __del__(self):
       self.running = False
       return
+
+   def getMulticastingSock(selfi,host):
+      MCAST_GRP = constants.get('default.mcastgrp')
+      MCAST_PORT = int(constants.get('default.mcastport'))
+
+      # start a multicast server to listen for requests
+      sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+      try:
+         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+      except AttributeError:
+         pass
+      sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 32)
+      sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_LOOP, 1)
+      sock.bind((MCAST_GRP, MCAST_PORT))
+      sock.setsockopt(socket.SOL_IP, socket.IP_MULTICAST_IF, socket.inet_aton(host))
+      sock.setsockopt(socket.SOL_IP, socket.IP_ADD_MEMBERSHIP,socket.inet_aton(MCAST_GRP) +\
+                      socket.inet_aton(host))
+      return sock
+
+   def multicastThread(self):
+      MCAST_GRP = constants.get('default.mcastgrp')
+      MCAST_PORT = int(constants.get('default.mcastport'))
+      sock = self.getMulticastingSock(self.address[0])
+      while 1:
+         try:
+            data, addr = sock.recvfrom(1024)
+            if (data.decode() == 'ROLE'):
+               sock.sendto(self.role.encode('UTF8'), addr)
+         except:
+            pass
+
+   # Attempt to locate a publisher (controller) on the network. 
+   def findPublisher(self):
+      # first load the ip addresses from the local iptables and try them.
+      MCAST_GRP = constants.get('default.mcastgrp')
+      MCAST_PORT = int(constants.get('default.mcastport'))
+      sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+      sock.settimeout(5)
+      sock.setsockopt(socket.SOL_IP, socket.IP_MULTICAST_IF, socket.inet_aton(self.address[0]))
+      sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 32)
+      found = False
+      address = None
+      while(not found):
+         sock.sendto('ROLE'.encode('UTF8'), (MCAST_GRP, MCAST_PORT))
+         try:
+            data, addr = sock.recvfrom(1024)
+            if (data.decode() == 'PUBLISHER'):
+               address = (addr[0],SERVER_PORT)
+               found = True
+         except:
+            continue
+      self.registerClient(address, self.group)
 
    # retrieve a semicolon delimeted list of clusters
    def getClusterList(self):
@@ -182,16 +247,19 @@ class ThunderRPC(threading.Thread):
   
    # send a message to another machine running the ThunderRPC service
    def publishToHost(self, host, data):
-      # open a socket connection
-      s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-      s.connect(host)
-      # encode the data before sending
-      s.send(data.encode('UTF8'))
-      # wait for a response from the host
-      response = s.recv(1024).decode()
-      s.close()
-      # return a colon delimited string containing the IP address of the host and its response
-      return host[0]+':'+str(response)
+      try:
+         # open a socket connection
+         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+         s.connect(host)
+         # encode the data before sending
+         s.send(data.encode('UTF8'))
+         # wait for a response from the host
+         response = s.recv(1024).decode()
+         s.close()
+         # return a colon delimited string containing the IP address of the host and its response
+         return host[0]+':'+str(response)
+      except:
+         return None
 
    def cleanupClients(self):
       # For each group in the list of clients, find the unavailable address and remove it.
@@ -204,11 +272,13 @@ class ThunderRPC(threading.Thread):
                s.connect(addr)
                s.close()
             except:
+               print("Removing inactive client `%s:%d'" % (addr[0],addr[1]))
                addresses.remove(addr)
                if (len(self.clients.get(grp)) == 0):
                   emptyGroups += [grp]
       # Any groups with no clients should be removed
       for grp in emptyGroups:
+         print("Removing empty group `%s'" % grp)
          del self.clients.collection()[grp]
   
    # publish data to an entire group
@@ -227,6 +297,7 @@ class ThunderRPC(threading.Thread):
         
    # register an event by adding it to a dictionary (NAME->EVENT)
    def registerEvent(self, name, event):
+      print("Registering event - `%s (%s)'" % (name, event.__name__))
       self.events.append((name, event))
       return
    
@@ -237,6 +308,7 @@ class ThunderRPC(threading.Thread):
 
       # encrypt the nonce with pre-shared key and send it back to the host.
       decVal = auth.encrypt(nonce).decode('UTF8')
+      
       ret = self.publishToHost(host, 'SUBSCRIBE ' + self.address[0] + ' ' + str(self.address[1]) + ' ' + self.group + ' ' + decVal)
      
       # save the IP of the publisher.
@@ -262,11 +334,11 @@ class ThunderRPC(threading.Thread):
       
       alive = True
       while (alive):
-         ret = self.publishToHost(self.publisher, "HEARTBEAT")
-         if (ret == None):
-            alive = False
-       
          sleep(int(constants.get('heartbeat.interval')))
+         ret = self.publishToHost(self.publisher, 'HEARTBEAT')
+         if (ret == None):
+            print('Publisher is not responding to heartbeat requests!')
+            alive = False
       self.findPublisher()
       return
    
@@ -284,62 +356,6 @@ class ThunderRPC(threading.Thread):
                   addresses += [lineArr[i+1]]
       return addresses
      
-   # Attempt to locate a publisher (controller) on the network. 
-   def findPublisher(self):
-      # first load the ip addresses from the local iptables and try them.
-      routingTable = self.ipRouteList()
-      if (len(routingTable) > 0):
-         for address in routingTable:
-            if (self.testForPublisher(address)):
-               # this address is a publisher. connect to it!
-               self.registerClient((address, SERVER_PORT), self.group)
-               return
-     
-      # we couldn't find the publisher in the local routing table.  perform a linear scan over the subnet.
-      ip = self.getIP(self.interface)
-      octets = ip.split('.')
-
-      # Maybe the localhost is the publisher.  Test that first.
-      testOctet = int(octets[3])
-      address = octets[0] + '.' + octets[1] + '.' + self.publisherSubnet + '.' + str(testOctet)
-      if (self.testForPublisher(address)):
-         self.registerClient((address, SERVER_PORT), self.group)
-         return
-      else:
-         testOctet = 1
-
-      found = False
-      while (not found):
-         address = octets[0] + '.' + \
-                   octets[1] + '.' + \
-                   self.publisherSubnet + '.' + \
-                   str(testOctet)
-         if (self.testForPublisher(address)):
-            # this address is a publisher.  connect to it!
-            self.registerClient((address, SERVER_PORT), self.group)
-            found = True
-         else:
-            testOctet+=1
-            if (testOctet > 255):
-               testOctet = 0
-      return
-   
-   # test a particular address for liveness and an administrative role
-   def testForPublisher(self, address):
-      s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-      s.settimeout(int(constants.get('timeout.publishertest')))
-      try:
-         s.connect((address, SERVER_PORT))
-         s.settimeout(None)
-         s.sendall('ROLE'.encode('UTF8'))
-         response = s.recv(9).decode('UTF8')
-         if (response == 'PUBLISHER'):
-            return True
-      except:
-         pass
-      s.close()
-      return False
-      
    # Handler class for handling incoming connections
    class ThunderRPCServer(socketserver.BaseRequestHandler):
       def setup(self):
@@ -352,8 +368,6 @@ class ThunderRPC(threading.Thread):
          websock = websocket(self.request)
          decodedData = ''
          ws = False
-       
-         print(self.data)
  
          # Check to see if the data is coming over a websocket connection (cloud interface)
          if (websock.isHandshakePending(self.data)):
@@ -431,21 +445,24 @@ class ThunderRPC(threading.Thread):
          return
         
       def processTraditionalRequest(self, data):
+         client = self.client_address
          events = self.container.events
          clients = self.container.clients
         
          # check if the request is an event call
          if (events.contains(data[0])):
+            print("Received an RPC request (%s) from %s:%d" % (data[0],client[0],client[1]))
             func = events.get(data[0])
             params = []
             for i in range(1, len(data), 1):
                params += [data[i]]
               
             # call the function and get the result
-            response = func(params)
- 
-            # send the result to the caller
-            self.request.sendall(str(response).encode('UTF8'))
+            response = func(data[0],params)
+
+            if (response != None):
+                # send the result to the caller
+                self.request.sendall(str(response).encode('UTF8'))
         
          # check if the request is a query for the service role (PUBLISHER | SUBSCRIBER)
          elif (data[0] == 'ROLE'):
@@ -453,6 +470,7 @@ class ThunderRPC(threading.Thread):
         
          # check if the caller is requesting a nonce for authorization
          elif (data[0] == 'AUTH'):
+            print("Received an authorization request from %s" % client[0])
             nonce = auth.generateNonce()
             self.container._nonce = nonce
             self.request.sendall(nonce.encode('UTF8'))
@@ -471,9 +489,11 @@ class ThunderRPC(threading.Thread):
                   else:
                      c = [(data[1], int(data[2]))]
                      clients.append((data[3], c))
-        
+                  print("Authorization request from %s:%s successful!" % (data[1], data[2]))
+                  print("Adding client %s:%s to group `%s'" % (data[1], data[2], data[3])) 
          # check if the caller is sending a heartbeat           
-         elif (data[0] == 'ALIVE'):
+         elif (data[0] == 'HEARTBEAT'):
+            print("Received a heartbeat pulse from %s" % client[0])
             self.request.sendall(data[0].encode('UTF8'))
         
          return

@@ -6,22 +6,25 @@
 from ThunderRPC import *
 
 # Invoke a function and return the result.
-def invoke(params):
-   if (len(params) > 1):
-      if (params[0] == "CONTROL"):
-         if (params[1] == "GET_CLIENT_LIST"):
+def invoke(*params):
+   tag = params[0]
+   data = params[1]
+
+   if (len(data) > 1):
+      if (data[0] == "CONTROL"):
+         if (data[1] == "GET_CLIENT_LIST"):
             return server.getClientList()
-         elif (params[1] == "GET_CLUSTER_LIST"):
+         elif (data[1] == "GET_CLUSTER_LIST"):
             return server.getClusterList()
-      elif (params[0] == "GROUP"):
+      elif (data[0] == "GROUP"):
          return server.publishToGroup(params[2], params[1])
-      elif (params[0] == "HOST"):
+      elif (data[0] == "HOST"):
          host = (params[1], int(params[2]))
          return server.publishToHost(host,params[3])
    # Invalid number of params.  Return error code.
    else:
-      return -1
+      return None
 
 # Instantiate NetEvent and register the invoke event
-server = ThunderRPC(role = 'PUBLISHER', group = "Cloud")
-server.registerEvent("INVOKE", invoke)
+server = ThunderRPC(role = 'PUBLISHER', group = 'Cloud')
+server.registerEvent('INVOKE', invoke)

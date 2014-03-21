@@ -1,7 +1,11 @@
 import os
 import platform
 
-def utilization(params):
+def utilization(*params):
+   # extract the tag and data
+   tag = params[0]
+   data = params[1]
+
    # Get memory utilization
    memInfo = open('/proc/meminfo','r')
    memtotal = memInfo.readline().split(':')[1].strip().split()[0]
@@ -19,7 +23,11 @@ def utilization(params):
    retVal = memtotal + ":" + memfree + ":" + oneMin + ":" + fiveMin + ":" + fifteenMin
    return retVal
 
-def sysInfo(params):
+def sysInfo(*params):
+   # extract the tag and data
+   tag = params[0]
+   data = params[1]
+
    fullOsName = ''
    for i in platform.dist():
       fullOsName += i + ' '
