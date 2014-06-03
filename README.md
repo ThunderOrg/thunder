@@ -18,7 +18,7 @@
 <p>Traditionally, virtual machines that are instantiated in the cloud must be connected to via a separate application using either the VNC or RDP protocols.  However, this can be cumbersome because a client might just want to quickly connect and go.  Thunder allows clients to launch a virtual machine from a web browser, and then connect to it in the browser using WebSockets and HTML 5 canvas.  Of course, clients can also connect in the more traditional manner as well.</p>
 </ul>
 
-<h2>Naming scheme and responsibility of Thunder services</h2>
+<h3>Naming scheme and responsibility of Thunder services</h3>
 
 <h3>Cloud Controller (Zeus)</h3>
 <ul>
