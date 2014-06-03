@@ -21,5 +21,6 @@
 
 <h3>Storage Controller (Indra)</h3>
 <ul>
+<li>ThunderRPC subscriber</li>
 <li>NAS host (NFS and Samba)</li>
 </ul>

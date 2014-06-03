@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+
+# Compute Controller (Thor) component of Thunder
+# Developed by Gabriel Jacob Loewen
+# The University of Alabama
+# Cloud and Cluster Computer Group
+
 from ThunderRPC import *
 from subprocess import call
 

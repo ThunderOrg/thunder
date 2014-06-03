@@ -1,7 +1,9 @@
 #! /usr/bin/env python3
 
-# server component of Thunder Cloud
-# Copyright 2014 Gabriel Jacob Loewen
+# Cloud Controller (Zeus) component of Thunder
+# Developed by Gabriel Jacob Loewen
+# The University of Alabama
+# Cloud and Cluster Computer Group
 
 from ThunderRPC import *
 

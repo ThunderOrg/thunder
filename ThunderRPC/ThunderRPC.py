@@ -135,11 +135,13 @@ class ThunderRPC(threading.Thread):
       self.running = False
       return
 
+   # get an unbound socket to send multicast messages
    def getMulticastingSender(self):
       sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-      sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 32)
+      sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
       return sock
 
+   # get a bound socket for receiving multicast messages
    def getMulticastingReceiver(self):
       MCAST_GRP = constants.get('default.mcastgrp')
       MCAST_PORT = int(constants.get('default.mcastport'))
@@ -148,6 +150,8 @@ class ThunderRPC(threading.Thread):
          sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
       except AttributeError:
          pass
+
+      # bind to all adapters
       sock.bind(('0.0.0.0', MCAST_PORT))
       mreq = struct.pack("4sl", socket.inet_aton(MCAST_GRP), socket.INADDR_ANY)
       sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
@@ -183,8 +187,10 @@ class ThunderRPC(threading.Thread):
             if (response[0] == 'PUBLISHER'):
                address = (addr[0],SERVER_PORT)
                # if the service is bound globally, replace the IP with the correct one
+               # also find the correct interface
                if (self.interface == 'ALL'):
                   self._IP = response[1]
+                  self._interface =  
                found = True
          except KeyboardInterrupt:
             raise

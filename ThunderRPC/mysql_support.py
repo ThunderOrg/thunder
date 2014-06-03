@@ -1,3 +1,8 @@
+# mysql_support.py - support some basic mysql operations for ThunderRPC
+# Developed by Gabriel Jacob Loewen
+# The University of Alabama
+# Cloud and Cluster Computer Group
+
 import mysql.connector
 
 def getNASAddress():

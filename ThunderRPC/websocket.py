@@ -1,4 +1,4 @@
-# Simple websocket support for NetEvent
+# Simple websocket support for ThunderRPC
 # Developed by Gabriel Jacob Loewen
 # The University of Alabama
 # Cloud and Cluster Computer Lab
@@ -57,9 +57,8 @@ class websocket:
       response += 'Sec-WebSocket-Accept: ' + retKey.decode() + '\r\n\r\n'
       return response.encode("UTF8")
 
-   # Wrap data inside of a hybi-13 websocket frame.  Does not require masking from server-client.
+   # Wrap data inside of a hybi-13 websocket frame.  Does not require masking from server->client.
    def encode(self, opcode, data):
-      # Wrap data in a hybi-13 frame
       encodedData = data.encode('UTF8')
 
       # Header will be 10000001
