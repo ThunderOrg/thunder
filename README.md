@@ -4,7 +4,7 @@
 <p>Thunder is also meant as a learning tool.  By decreasing complexity of the system architecture, cloud computing concepts can more easily be taught in the classroom.  These concepts include: hardware virtualization, scalability, elasticity, accessibility, and more.  Outlined below are a few of the concepts and a description of the approach that Thunder takes:</p>
 <ul>
 <li>Hardware virtualization</li>
-<p> Like many open cloud architectures, Thunder uses an open virtualization API to interface with the hypervisor.  This API is called 'libvirt' (http://libvirt.org).  Libvirt gives Thunder an interface for calling low-level operations on the host, such as instantiation of virtual machine instances, mounting of network storage shares (Indra nodes), networking configuration, and more.</p>
+<p> Like many open cloud architectures, Thunder uses an open virtualization API to interface with the hypervisor.  This API is called 'libvirt' (http://libvirt.org).  Libvirt gives Thunder an interface for calling low-level operations on the host, such as instantiation of virtual machine images, mounting of network storage shares (Indra nodes), networking configuration, and more.</p>
 <li>Scalability</li>
 <p>Scalability of an architecture is the ability for allocated resources in the cloud to scale up (increase) as the clients demands increase, and scale down (decrease) as the clients demands decrease.  For example, a client may have a large workload and wants 32gb of ram, in which case the architecture can scale up the amount of ram available to the client.  However, it could be that later on the client doesn't need as much, so the architecture can scale down to something more reasonable.  This is all possible with Thunder.</p>
 <li>Elasticity</li>
