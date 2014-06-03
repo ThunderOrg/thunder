@@ -11,7 +11,7 @@
 <p>Elasticity of an architecture is the ability for the cloud itself to grow in a way that does not impact the running state.  For example, an elastic cloud with 4 nodes can quickly and painlessly become a 40 node cloud given the additional hardware.  Thunder supports elasticity using a number of strategies.  
 <ul>
 <li>Thunder nodes support ad hoc registration.  This means that by connecting a Thunder node to the network it will automagically register itself with the cloud and expose it's services to Thunder.</li>
-<li>Network disruptions prompt Thunder nodes to fall back into a `searching state', in which disconnected nodes broadcast connection requests over the network.  Furthermore, Thunder also supports cooperative redundant publishers, such that if a Zeus controller goes offline a replica can become the master node.<li>
+<li>Network disruptions prompt Thunder nodes to fall back into a `searching state', in which disconnected nodes broadcast connection requests over the network.  Furthermore, Thunder also supports cooperative redundant publishers, such that if a Zeus controller goes offline a replica can become the master node.</li>
 <li>Deployment is painless using PXE booting and a web-based deployment tool based on Cobbler</li>
 </ul>
 <li>Accessibility<li>
