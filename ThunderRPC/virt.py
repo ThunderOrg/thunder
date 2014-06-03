@@ -74,10 +74,6 @@ def createTarget(path):
 def setup(target):
    path = "/var/lib/libvirt/images/"
    tar = tarfile.open(target, 'r')
-   for item in tar:
-      if (item.endswith
-      tar.extract(item, path)
-
    # install the image in libvirt
   
 hostname = sys.argv[1]

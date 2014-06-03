@@ -13,6 +13,7 @@ def instantiate(*params):
 
    # Instantiate a virtual machine
    vmName = data[0]
+   
    # Parse the MAC address from the virtual machine
    # connection and then use ARP to get the IP address
    return 1 #getIPAddr(vm)

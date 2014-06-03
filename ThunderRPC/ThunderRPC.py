@@ -5,7 +5,7 @@
 
 # TODO:  Break this into Server/Client modules
 
-import auth, re, mysql.connector, threading, socket, socketserver, sys, subprocess
+import auth, re, mysql.connector, threading, socket, socketserver, sys, subprocess, platform, struct
 import events as builtinEvents
 from dictionary import *
 from websocket import *
@@ -76,9 +76,6 @@ class ThunderRPC(threading.Thread):
       # set the default publisher to None
       self._publisher = None
 
-      # set the default publishers subnet
-      self._publisherSubnet = constants.get('server.subnet')
-
       # set an initial nonce value.  this should always be updated when adding a new client.
       self._nonce = ''
 
@@ -138,54 +135,59 @@ class ThunderRPC(threading.Thread):
       self.running = False
       return
 
-   def getMulticastingSock(selfi,host):
+   def getMulticastingSender(self):
+      sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+      sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 32)
+      return sock
+
+   def getMulticastingReceiver(self):
       MCAST_GRP = constants.get('default.mcastgrp')
       MCAST_PORT = int(constants.get('default.mcastport'))
-
-      # start a multicast server to listen for requests
       sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
       try:
          sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
       except AttributeError:
          pass
-      sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 32)
-      sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_LOOP, 1)
-      sock.bind((MCAST_GRP, MCAST_PORT))
-      sock.setsockopt(socket.SOL_IP, socket.IP_MULTICAST_IF, socket.inet_aton(host))
-      sock.setsockopt(socket.SOL_IP, socket.IP_ADD_MEMBERSHIP,socket.inet_aton(MCAST_GRP) +\
-                      socket.inet_aton(host))
+      sock.bind(('0.0.0.0', MCAST_PORT))
+      mreq = struct.pack("4sl", socket.inet_aton(MCAST_GRP), socket.INADDR_ANY)
+      sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
       return sock
 
    def multicastThread(self):
       MCAST_GRP = constants.get('default.mcastgrp')
       MCAST_PORT = int(constants.get('default.mcastport'))
-      sock = self.getMulticastingSock(self.address[0])
+      receiver = self.getMulticastingReceiver()
       while 1:
          try:
-            data, addr = sock.recvfrom(1024)
+            data, addr = receiver.recvfrom(1024)
             if (data.decode() == 'ROLE'):
-               sock.sendto(self.role.encode('UTF8'), addr)
+               # pack the role up with the client IP
+               response = self.role + "|" + addr[0]
+               receiver.sendto(response.encode('UTF8'), addr)
          except:
             pass
 
    # Attempt to locate a publisher (controller) on the network. 
    def findPublisher(self):
-      # first load the ip addresses from the local iptables and try them.
       MCAST_GRP = constants.get('default.mcastgrp')
       MCAST_PORT = int(constants.get('default.mcastport'))
-      sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-      sock.settimeout(5)
-      sock.setsockopt(socket.SOL_IP, socket.IP_MULTICAST_IF, socket.inet_aton(self.address[0]))
-      sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 32)
+      sender = self.getMulticastingSender()
+      sender.settimeout(5)
       found = False
       address = None
       while(not found):
-         sock.sendto('ROLE'.encode('UTF8'), (MCAST_GRP, MCAST_PORT))
+         sender.sendto('ROLE'.encode('UTF8'), (MCAST_GRP, MCAST_PORT))
          try:
-            data, addr = sock.recvfrom(1024)
-            if (data.decode() == 'PUBLISHER'):
+            data, addr = sender.recvfrom(1024)
+            response = data.decode().split('|')
+            if (response[0] == 'PUBLISHER'):
                address = (addr[0],SERVER_PORT)
+               # if the service is bound globally, replace the IP with the correct one
+               if (self.interface == 'ALL'):
+                  self._IP = response[1]
                found = True
+         except KeyboardInterrupt:
+            raise
          except:
             continue
       self.registerClient(address, self.group)
@@ -209,6 +211,9 @@ class ThunderRPC(threading.Thread):
 
    # get the IP of the desired networking interface
    def getIP(self, interface):
+      if (interface == 'ALL'):
+         return '0.0.0.0'
+
       p = subprocess.Popen(['/sbin/ifconfig', interface.strip()], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
       ifconfig = p.communicate()[0]
       if (ifconfig):
@@ -217,7 +222,11 @@ class ThunderRPC(threading.Thread):
             item = item.strip()
             # find the IP address from the ifconfig output
             if (item.startswith('inet ')):
-               return item.split(':')[1].split()[0]
+               print(item)
+               if (platform.system() == 'Darwin'):
+                  return item.split(' ')[1]
+               else:
+                  return item.split(':')[1].split()[0]
       return '127.0.0.1'
 
    # get the MAC address of the desired networking interface
@@ -308,7 +317,7 @@ class ThunderRPC(threading.Thread):
 
       # encrypt the nonce with pre-shared key and send it back to the host.
       decVal = auth.encrypt(nonce).decode('UTF8')
-      
+
       ret = self.publishToHost(host, 'SUBSCRIBE ' + self.address[0] + ' ' + str(self.address[1]) + ' ' + self.group + ' ' + decVal)
      
       # save the IP of the publisher.
