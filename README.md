@@ -14,7 +14,7 @@
 <li>Network disruptions prompt Thunder nodes to fall back into a `searching state', in which disconnected nodes broadcast connection requests over the network.  Furthermore, Thunder also supports cooperative redundant publishers, such that if a Zeus controller goes offline a replica can become the master node.</li>
 <li>Deployment is painless using PXE booting and a web-based deployment tool based on Cobbler</li>
 </ul>
-<li>Accessibility<li>
+<li>Accessibility</li>
 <p>Traditionally, virtual machines that are instantiated in the cloud must be connected to via a separate application using either the VNC or RDP protocols.  However, this can be cumbersome because a client might just want to quickly connect and go.  Thunder allows clients to launch a virtual machine from a web browser, and then connect to it in the browser using WebSockets and HTML 5 canvas.  Of course, clients can also connect in the more traditional manner as well.</p>
 </ul>
 
