@@ -190,7 +190,6 @@ class ThunderRPC(threading.Thread):
                # also find the correct interface
                if (self.interface == 'ALL'):
                   self._IP = response[1]
-                  self._interface =  
                found = True
          except KeyboardInterrupt:
             raise
@@ -352,7 +351,6 @@ class ThunderRPC(threading.Thread):
          sleep(int(constants.get('heartbeat.interval')))
          ret = self.publishToHost(self.publisher, 'HEARTBEAT')
          if (ret == None):
-            print('Publisher is not responding to heartbeat requests!')
             alive = False
       self.findPublisher()
       return
@@ -466,7 +464,6 @@ class ThunderRPC(threading.Thread):
         
          # check if the request is an event call
          if (events.contains(data[0])):
-            print("Received an RPC request (%s) from %s:%d" % (data[0],client[0],client[1]))
             func = events.get(data[0])
             params = []
             for i in range(1, len(data), 1):
@@ -485,7 +482,6 @@ class ThunderRPC(threading.Thread):
         
          # check if the caller is requesting a nonce for authorization
          elif (data[0] == 'AUTH'):
-            print("Received an authorization request from %s" % client[0])
             nonce = auth.generateNonce()
             self.container._nonce = nonce
             self.request.sendall(nonce.encode('UTF8'))
@@ -504,11 +500,8 @@ class ThunderRPC(threading.Thread):
                   else:
                      c = [(data[1], int(data[2]))]
                      clients.append((data[3], c))
-                  print("Authorization request from %s:%s successful!" % (data[1], data[2]))
-                  print("Adding client %s:%s to group `%s'" % (data[1], data[2], data[3])) 
          # check if the caller is sending a heartbeat           
          elif (data[0] == 'HEARTBEAT'):
-            print("Received a heartbeat pulse from %s" % client[0])
             self.request.sendall(data[0].encode('UTF8'))
         
          return

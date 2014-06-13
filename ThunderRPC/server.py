@@ -6,6 +6,7 @@
 # Cloud and Cluster Computer Group
 
 from ThunderRPC import *
+import sys
 
 # Invoke a function and return the result.
 def invoke(*params):
@@ -30,3 +31,16 @@ def invoke(*params):
 # Instantiate NetEvent and register the invoke event
 server = ThunderRPC(role = 'PUBLISHER', group = 'Cloud')
 server.registerEvent('INVOKE', invoke)
+
+if (len(sys.argv) > 1 and sys.argv[1] == 'console'):
+   print("THUNDER Console")
+   group = ''
+   data = ''
+   done = False
+   while (not done):
+      group = input("group> ")
+      data = input("data> ")
+      result = server.publishToGroup(group, data)
+      print(result)
+      done = eval(input("done? "))
+   print("finished")

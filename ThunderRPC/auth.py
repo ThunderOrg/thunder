@@ -1,4 +1,4 @@
-# A component of the NetEvent cloud middleware dealing with node authentication.
+# A component of the ThunderRPC that dealds with node authentication.
 # Developed by Gabriel Jacob Loewen
 # The University of Alabama
 # Cloud and Cluster Computer Lab
@@ -9,7 +9,7 @@ from Crypto import Random
 from Crypto.Random import random
 from Crypto.Cipher import AES
 
-# Shared key
+# Shared key!  This should probably be more secure...
 k = b'YM{<GC\xdaQ\x80\xe8\xd8\xcf\xf1\xf7\xdaM'
 
 # Blocksize for crypto and padding to make sure the length is as expected

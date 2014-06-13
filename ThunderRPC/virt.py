@@ -75,13 +75,13 @@ def setup(target):
    path = "/var/lib/libvirt/images/"
    tar = tarfile.open(target, 'r')
    # install the image in libvirt
-  
-hostname = sys.argv[1]
-sharename = sys.argv[2]
-domain = sys.argv[3]
+
+requestID = sys.argv[1]
+location = sys.argv[2]
+vmname = sys.argv[3]
 conn = connect()
 
-pool, target = mountVMPool(conn, hostname, sharename)
+pool, target = mountVMPool(conn, location, "ThunderImages")
 specs = getImageList(target)
 
 if (domain+'.spec' in specs):

@@ -7,6 +7,7 @@
 
 from ThunderRPC import *
 from subprocess import call
+import uuid
 
 def main():
    client = ThunderRPC()
@@ -16,12 +17,20 @@ def main():
 def instantiate(*params):
    tag = params[0]
    data = params[1]
+    
+   if (len(data) < 2):
+      return "You must supply the virtual machine name and where it is located!"
 
-   # Instantiate a virtual machine
-   vmName = data[0]
-   
-   # Parse the MAC address from the virtual machine
-   # connection and then use ARP to get the IP address
-   return 1 #getIPAddr(vm)
+   # get the specifics from the data
+   vmname = data[0]
+   location = data[1]
+
+   # create an entry in the database for this request.
+   # it will contain the IP address of the machine once it has started.
+   id = uuid.uuid1()
+
+   # call virt.py with vmname and location
+
+   return id #getIPAddr(vm)
 
 main()
