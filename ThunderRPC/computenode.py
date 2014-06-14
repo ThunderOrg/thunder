@@ -5,7 +5,7 @@
 # The University of Alabama
 # Cloud and Cluster Computer Group
 
-from ThunderRPC import *
+from thunder import *
 from subprocess import call
 import uuid
 

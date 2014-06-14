@@ -7,7 +7,9 @@
 from hashlib import sha1
 from base64 import b64encode, b64decode
 from struct import pack, unpack
-from enum import Enum
+
+def Enum(**enums):
+    return type('Enum', (), enums)
 
 # Enum of opcodes for simplicity
 Opcode = Enum(

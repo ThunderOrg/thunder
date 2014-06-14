@@ -5,7 +5,7 @@
 # The University of Alabama
 # Cloud and Cluster Computer Group
 
-from ThunderRPC import *
+from thunder import *
 import sys
 
 # Invoke a function and return the result.
