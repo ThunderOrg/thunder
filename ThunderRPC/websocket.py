@@ -26,15 +26,17 @@ class websocket:
    def __init__(self, request):
       self.socket = request
       self.magic = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
-	  
-   # Test for a websocket upgrade request.  If request is valid return True.  Otherwise return False.
+
+   # Test for a websocket upgrade request.  If request is valid return True.
+   # Otherwise return False.
    def isHandshakePending(self, data):
       pending = False
       numKeys = 0
       dataArr = data.splitlines()
       for line in dataArr:
          lineArr = line.decode("UTF8").split(": ")
-         if (lineArr[0].lower() == 'upgrade' and lineArr[1].lower() == 'websocket'):
+         if (lineArr[0].lower() == 'upgrade' and \
+             lineArr[1].lower() == 'websocket'):
             pending = True
          elif (lineArr[0].lower() == 'sec-websocket-key'):
             numKeys+=1
@@ -43,11 +45,13 @@ class websocket:
          pending = False
 
       return pending
-	  
+
    # Parse the incoming request, and produce the correct handshake response.
-   # Key algorithm == base64 encoded sha1 hashed incoming key prepended to websocket magic value.
+   # Key algorithm == base64 encoded sha1 hashed incoming key prepended to
+   # websocket magic value.
    def handshake(self, data):
-      response = 'HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n'
+      response = 'HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket' +    \
+                 '\r\nConnection: Upgrade\r\n'
       dataArr = data.splitlines()
       key = ''
       for i in range(0, len(dataArr), 1):
@@ -59,7 +63,8 @@ class websocket:
       response += 'Sec-WebSocket-Accept: ' + retKey.decode() + '\r\n\r\n'
       return response.encode("UTF8")
 
-   # Wrap data inside of a hybi-13 websocket frame.  Does not require masking from server->client.
+   # Wrap data inside of a hybi-13 websocket frame.  Does not require masking
+   # from server->client.
    def encode(self, opcode, data):
       encodedData = data.encode('UTF8')
 
@@ -68,7 +73,8 @@ class websocket:
       # 000 - 3 reserved bits
       # 0001 - Text opcode (UTF-8 encoded)
       # 129 in base10
-      header = pack('!B', ((1 << 7) | (0 << 6) | (0 << 5) | (0 << 4) | Opcode.text))
+      header = pack('!B', ((1 << 7) | (0 << 6) | (0 << 5) | (0 << 4) |         \
+                           Opcode.text))
       payloadLen = len(encodedData)
       if (payloadLen < 126):
          header += pack('!B', payloadLen)
@@ -77,14 +83,15 @@ class websocket:
       elif (payloadLen < (1 << 63)):
          header += pack('>B', 127) + pack('>Q', payloadLen)
       return bytes(header + encodedData)
-   
+
    # Read a hybi-13 websocket frame and unmask the payload.
    def decode(self):
       data = self.socket.recv(2)
       payloadLen = data[1] & 127
       if (len == 126): # Two more bytes indicate length.  16-bits.
          payloadLen = unpack(">H", self.socket.recv(2))[0]
-      elif (len == 127): # Eight more bytes indicate length.  Python should give us a 64-bit int.
+      elif (len == 127): # Eight more bytes indicate length.  Python should
+                         # give us a 64-bit int.
          payloadLen = unpack(">Q", self.socket.recv(8))[0]
 
       # Get an array of bytes from the key

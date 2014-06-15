@@ -1,4 +1,4 @@
-import libvirt, sys, tarfile, uuid
+import sys, tarfile, uuid
 
 def connect():
    conn = libvirt.open('qemu:///system')
@@ -16,14 +16,14 @@ def mountVMPool(conn, hostname, sharename):
       vmpool.undefine()
    except libvirt.libvirtError as err:
       print err
-   
+
    target = "/thunderImg/" + sharename
    createTarget(target)
 
    vmpool = conn.storagePoolDefineXML(getImagePoolSpec(hostname,sharename,target),0)
    vmpool.setAutostart(True)
    ret = vmpool.create(0)
-   
+
    # The storage pool was created.
    if (ret==0):
       return vmpool, target
@@ -76,17 +76,18 @@ def setup(target):
    tar = tarfile.open(target, 'r')
    # install the image in libvirt
 
-requestID = sys.argv[1]
-location = sys.argv[2]
-vmname = sys.argv[3]
-conn = connect()
+#requestID = sys.argv[1]
+#location = sys.argv[2]
+#vmname = sys.argv[3]
+#conn = connect()
 
-pool, target = mountVMPool(conn, location, "ThunderImages")
-specs = getImageList(target)
+#pool, target = mountVMPool(conn, location, "ThunderImages")
+#specs = getImageList(target)
 
-if (domain+'.spec' in specs):
+#if (domain+'.spec' in specs):
    # Copy tarball of domain into /var/lib/libvirt/images and unpack
    # into a unique directory. Then install the domain into libvirt.
-   setup(target + "/" + domain + ".tgz")
+#   setup(target + "/" + domain + ".tgz")
 
-instantiate(conn, domain)
+#instantiate(conn, domain)
+print "hello"

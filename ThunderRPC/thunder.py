@@ -24,7 +24,9 @@ class ThunderRPC(threading.Thread):
     import rpc
     import networking
 
-    def __init__(self, role = constants.get('default.role'), group = constants.get('default.group')):
+    def __init__(self, role = constants.get('default.role'),                   \
+                 group = constants.get('default.group')):
+
         # invoke the constructor of the threading superclass
         super(ThunderRPC, self).__init__()
 
@@ -36,10 +38,12 @@ class ThunderRPC(threading.Thread):
             interface = constants.get('default.interface')
             port = int(constants.get('default.port'))
         else:
-            print("Invalid role identifer.  Must be either 'PUBLISHER' or 'SUBSCRIBER'")
+            print("Invalid role identifer.  Must be either" +                  \
+                  "'PUBLISHER' or 'SUBSCRIBER'")
             sys.exit(-1)
 
-        # set the interface variable, which is the interface that we want to bind the service to
+        # set the interface variable, which is the interface that we want to
+        # bind the service to
         self._interface = interface
 
         # set the role ('PUBLISHER' | 'SUBSCRIBER')
@@ -48,12 +52,15 @@ class ThunderRPC(threading.Thread):
         # get the IP address of the system
         self._IP = self.networking.getIP(interface)
 
-        # create a TCP server, and bind it to the address of the desired interface
-        self._server = self.rpc.ThunderRPCServer((self._IP, port), self.rpc.RequestHandler)
+        # create a TCP server, and bind it to the address of the desired
+        # interface
+        self._server = self.rpc.ThunderRPCServer((self._IP, port),             \
+                                                 self.rpc.RequestHandler)
         self._server._ThunderRPCInstance = self
         self._server.daemon = True
-        
-        # workaround for getting the port number for auto-assigned ports (default behavior for clients)
+
+        # workaround for getting the port number for auto-assigned ports
+        # (default behavior for clients)
         self._port = self._server.server_address[1]
 
         # create a dictionary mapping an event name to a function
@@ -61,7 +68,8 @@ class ThunderRPC(threading.Thread):
 
         # create a dictionary mapping a group name to an array of tuples (IP,Port)
         # these tuples represent the clients that are connecting to this service
-        # if the role of this service is SUBSCRIBER then this dictionary should always be empty.
+        # if the role of this service is SUBSCRIBER then this dictionary should
+        # always be empty.
         self._clients = Dictionary()
 
         print("Starting ThunderRPC Service (role = %s)" % role)
@@ -78,7 +86,8 @@ class ThunderRPC(threading.Thread):
         # set the default publisher to None
         self._publisher = None
 
-        # set an initial nonce value.  this should always be updated when adding a new client.
+        # set an initial nonce value. this should always be updated when adding
+        # a new client.
         self._nonce = ''
 
         if (role == 'PUBLISHER'):
@@ -109,7 +118,7 @@ class ThunderRPC(threading.Thread):
         return self._role
 
     @property
-    def address(self):
+    def addr(self):
         return (self._IP, self._port)
 
     @property
@@ -150,7 +159,8 @@ class ThunderRPC(threading.Thread):
         return clist[:-1].strip()
 
     def cleanupClients(self):
-        # For each group in the list of clients, find the unavailable address and remove it.
+        # For each group in the list of clients, find the unavailable address
+        # and remove it.
         emptyGroups = []
         for grp in self.clients.collection():
             addresses = self.clients.get(grp)
@@ -205,12 +215,12 @@ class ThunderRPC(threading.Thread):
          except:
             pass
 
-    # Attempt to locate a publisher (controller) on the network. 
+    # Attempt to locate a publisher (controller) on the network.
     def findPublisher(self):
         MCAST_GRP = constants.get('default.mcastgrp')
         MCAST_PORT = int(constants.get('default.mcastport'))
         sender = self.getMulticastingSender()
-        sender.settimeout(5)
+        sender.settimeout(int(constants.get('multicast.timeout')))
         found = False
         address = None
         while(not found):
@@ -220,8 +230,8 @@ class ThunderRPC(threading.Thread):
                 response = data.decode().split('|')
                 if (response[0] == 'PUBLISHER'):
                     address = (addr[0],SERVER_PORT)
-                    # if the service is bound globally, replace the IP with the correct one
-                    # also find the correct interface
+                    # if the service is bound globally, replace the IP with the
+                    # correct one.  also find the correct interface
                     if (self.interface == 'ALL'):
                         self._IP = response[1]
                     found = True
@@ -242,7 +252,8 @@ class ThunderRPC(threading.Thread):
             # wait for a response from the host
             response = s.recv(1024).decode()
             s.close()
-            # return a colon delimited string containing the IP address of the host and its response
+            # return a colon delimited string containing the IP address of
+            # the host and its response
             return host[0]+':'+str(response)
         except:
             return None
@@ -268,14 +279,17 @@ class ThunderRPC(threading.Thread):
         return
 
     # register client with a server (subscribe to a publisher)
-    def registerClient(self, host, group):    
-        # send an authorization request to the server.  The server should return a nonce value.
+    def registerClient(self, host, group):
+        # send an authorization request to the server.  The server should
+        # return a nonce value.
         nonce = self.publishToHost(host, 'AUTH')
 
         # encrypt the nonce with pre-shared key and send it back to the host.
         decVal = auth.encrypt(nonce).decode('UTF8')
 
-        ret = self.publishToHost(host, 'SUBSCRIBE ' + self.address[0] + ' ' + str(self.address[1]) + ' ' + self.group + ' ' + decVal)
+        ret = self.publishToHost(host, 'SUBSCRIBE ' + self.addr[0] + ' ' +     \
+                                 str(self.addr[1]) + ' ' + self.group + ' ' +  \
+                                 decVal)
 
         # save the IP of the publisher.
         self.publisher = host
@@ -284,14 +298,16 @@ class ThunderRPC(threading.Thread):
         self.startHeartBeat()
         return
 
-    # spin up another thread that will periodically ping the server to make sure that it is still alive.
+    # spin up another thread that will periodically ping the server to make sure
+    # that it is still alive.
     def startHeartBeat(self):
         self._heartBeatThread = threading.Thread(target = self.heartBeat)
         self._heartBeatThread.start()
         return
 
-    # send a 'pulse' to the publisher.  If the publisher doesn't respond then maybe its IP has changed
-    # in which case we can try to connect to it again by polling addresses on the network.
+    # send a 'pulse' to the publisher.  If the publisher doesn't respond then
+    # maybe its IP has changed in which case we can try to connect to it again
+    # by polling addresses on the network.
     def heartBeat(self):
         # if there is no publisher to ping then something bad happened.
         if (self.publisher == None):

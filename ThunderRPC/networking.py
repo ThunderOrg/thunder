@@ -4,8 +4,9 @@ import subprocess
 def getIP(interface):
     if (interface == 'ALL'):
         return '0.0.0.0'
-    
-    p = subprocess.Popen(['/sbin/ifconfig', interface.strip()], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    p = subprocess.Popen(['/sbin/ifconfig', interface.strip()],                \
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     ifconfig = p.communicate()[0]
     if (ifconfig):
         data = ifconfig.decode().split('\n')
@@ -22,7 +23,8 @@ def getIP(interface):
 
 # get the MAC address of the desired networking interface
 def getMAC(interface):
-    p = subprocess.Popen(['/sbin/ifconfig', interface.strip()], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    p = subprocess.Popen(['/sbin/ifconfig', interface.strip()],                \
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     ifconfig = p.communicate()[0]
     if (ifconfig):
         data = ifconfig.decode().split('\n')
@@ -40,7 +42,8 @@ def getMAC(interface):
 # parse the local IP routing table for entries
 def ipRouteList(self):
     addresses = []
-    p = subprocess.Popen(['/sbin/ip', 'route', 'list'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    p = subprocess.Popen(['/sbin/ip', 'route', 'list'], stdout=subprocess.PIPE,\
+                         stderr=subprocess.PIPE)
     iptable = p.communicate()[0]
     if (iptable):
         data = iptable.decode().split('\n')
