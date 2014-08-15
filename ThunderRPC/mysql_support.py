@@ -3,21 +3,33 @@
 # The University of Alabama
 # Cloud and Cluster Computer Group
 
-import mysql.connector
+import pymysql
 
-def getNASAddress():
-   conn = mysql.connector.connect(user='root', password='thunder',             \
-                                  host='localhost', db='thunder')
+def connect():
+   conn = pymysql.connect(unix_socket='/var/run/mysqld/mysqld.sock', user='root', passwd='thunder',             \
+                                  host='127.0.0.1', db='thunder')
+   return conn
+
+def getNASAddress(name):
+   conn = connect()
    cur = conn.cursor()
-   cur.execute("SELECT address FROM node WHERE name='NAS';")
-   res = cur.fetchone()
+   cur.execute("SELECT address FROM nodes WHERE type='STORAGE' AND name='"+name+"';")
+   res = cur.fetchall()
    cur.close()
    conn.close()
    return res[0]
 
+def getImageData(name):
+   conn = connect()
+   cur = conn.cursor(pymysql.cursors.DictCursor)
+   cur.execute("SELECT * FROM images WHERE distro='"+name+"';")
+   res = cur.fetchone()
+   cur.close()
+   conn.close()
+   return res
+
 def getComputeNodeAddresses():
-   conn = mysql.connector.connect(user='root', password='thunder',             \
-                                  host='localhost', db='thunder')
+   conn = connect()
    cur = conn.cursor()
    cur.execute("SELECT address FROM node WHERE type='COMPUTE';")
    res = cur.fetchall()
@@ -25,9 +37,22 @@ def getComputeNodeAddresses():
    conn.close()
    return res
 
+def deleteInstance(domain):
+   conn = connect()
+   cur = conn.cursor()
+   cur.execute("DELETE FROM instances WHERE domain='"+domain+"';")
+   cur.close()
+   conn.close()
+
+def insertInstance(domain, ip):
+   conn = connect()
+   cur = conn.cursor()
+   cur.execute("INSERT INTO instances VALUES ("+domain+","+ip+");")
+   cur.close()
+   conn.close()
+
 def updateNode(name, address, tpe):
-   conn = mysql.connector.connect(user='root', password='thunder',             \
-                                  host='localhost', db='thunder')
+   conn = connect()
    cur = conn.cursor()
    cur.execute("INSERT INTO node VALUES ('" + name + "','" + address +         \
                "','" + tpe + "') on duplicate key UPDATE address='" +          \
