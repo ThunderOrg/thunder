@@ -21,6 +21,7 @@ from time import sleep
 def main():
    client = ThunderRPC()
    client.registerEvent("INSTANTIATE", instantiate)
+   client.registerEvent("DESTROY", destroy)
    client.findPublisher()
    instantiate("ubuntu")
 
