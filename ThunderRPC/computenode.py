@@ -5,68 +5,62 @@
 # The University of Alabama
 # Cloud and Cluster Computer Group
 
+import tempfile, libvirt, urllib.request, shutil, os, subprocess
+from mysql_support import mysql
 from thunder import *
-import tempfile
-import libvirt
-import mysql_support
 from smb.SMBHandler import SMBHandler
-import urllib.request
-import shutil
 from uuid import uuid1
-import os
 from xml.etree import ElementTree
-import subprocess
 from time import sleep
 
-def main():
-   client = ThunderRPC()
-   client.registerEvent("INSTANTIATE", instantiate)
-   client.registerEvent("DESTROY", destroy)
-   client.findPublisher()
-   instantiate("ubuntu")
-
 def instantiate(*params):
-   name = params[0]
+   args = params[1]
+   name = args[0]
+   username = args[1]
 
-   # open connection to hypervisor
-   conn = libvirt.openReadOnly(None)
-   if conn == None:
-      return -1
+   publisher = client.publisher[0]
 
-   image = mysql_support.getImageData(name)
+   myConnector = mysql(publisher, 3306)
+   myConnector.connect()
+   profile = myConnector.getProfileData(name)
+   image = myConnector.getImageData(profile['image'])
    serverName = image['node']
 
    # Lookup name in database to find network location of image
-   nas = mysql_support.getNASAddress(serverName)[0]
-   
-   copyFromNAS(image['name'], name + '.' + image['type'], nas)
-   copyFromNAS('configuration.iso', 'configuration.iso', nas)
-
+   nas = myConnector.getNASAddress(serverName)[0]
+  
    domain = str(uuid1()).replace('-','')
+   diskPath = domain + ".img"
+   configPath = domain + ".config"
 
-   virtHelper = subprocess.Popen(['./cloneAndInstall.sh', str(name + '.' + image['type']), domain], stdout=subprocess.PIPE)
+   copyFromNAS(image['disk'], image['directory'], diskPath, nas)
+   copyFromNAS(image['config'], image['directory'], configPath, nas)
+
+   virtHelper = subprocess.Popen(['./cloneAndInstall.sh', diskPath, configPath, domain], stdout=subprocess.PIPE)
    out, err = virtHelper.communicate()
    ip = out.decode().rstrip()
-   mysql_support.insertInstance(domain, ip)
+   myConnector.insertInstance(domain, ip, client.name, username)
+   myConnector.disconnect()
 
-   return domain, ip 
+   return domain+":"+ip 
 
 def destroy(*params):
    subprocess.Popen(['./destroyVM.sh', domain], stdout=subprocess.PIPE)
-   mysql_support.deleteInstance(domain)
-   
-def copyFromNAS(imageName, name, server):
+   myConnector = mysql(publisher, 3306)
+   myConnector.connect()
+   myConnector.deleteInstance(domain)
+   myConnector.disconnect()
+
+def copyFromNAS(imageName, directory, name, server):
    # Create a temp file for the image
    opener = urllib.request.build_opener(SMBHandler) 
-   src = opener.open("smb://"+server+"/share/images/"+imageName)
+   src = opener.open("smb://"+server+"/share/images/"+directory+"/"+imageName)
 
    # Save the image to the correct location
-   dest_dir = "/var/lib/libvirt/images/"
-   if not os.path.exists(dest_dir):
-      os.makedirs(dest_dir)
-   fname = dest_dir + "/"+name
-   if os.path.isfile(fname):
-      os.remove(fname)
+   dest_dir = "/var/lib/libvirt/images"
+
+   fname = dest_dir + "/" + name
+
    dest = open(fname, "wb")
    shutil.copyfileobj(src,dest)
 
@@ -74,4 +68,7 @@ def copyFromNAS(imageName, name, server):
    src.close()
    dest.close()
 
-main()
+client = ThunderRPC()
+client.registerEvent("INSTANTIATE", instantiate)
+client.registerEvent("DESTROY", destroy)
+client.findPublisher()

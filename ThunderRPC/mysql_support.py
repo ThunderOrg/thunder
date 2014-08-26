@@ -5,58 +5,70 @@
 
 import pymysql
 
-def connect():
-   conn = pymysql.connect(unix_socket='/var/run/mysqld/mysqld.sock', user='root', passwd='thunder',             \
-                                  host='127.0.0.1', db='thunder')
-   return conn
+class mysql():
+   def __init__(self, server, port):
+      self.server = server
+      self.port = port
 
-def getNASAddress(name):
-   conn = connect()
-   cur = conn.cursor()
-   cur.execute("SELECT address FROM nodes WHERE type='STORAGE' AND name='"+name+"';")
-   res = cur.fetchall()
-   cur.close()
-   conn.close()
-   return res[0]
+   def connect(self):
+      self.conn = pymysql.connect(user='thunder', passwd='thunder', db='thunder', \
+                                  host=self.server, port=self.port)
 
-def getImageData(name):
-   conn = connect()
-   cur = conn.cursor(pymysql.cursors.DictCursor)
-   cur.execute("SELECT * FROM images WHERE distro='"+name+"';")
-   res = cur.fetchone()
-   cur.close()
-   conn.close()
-   return res
+   def disconnect(self):
+      self.conn.commit()
+      self.conn.close()
 
-def getComputeNodeAddresses():
-   conn = connect()
-   cur = conn.cursor()
-   cur.execute("SELECT address FROM node WHERE type='COMPUTE';")
-   res = cur.fetchall()
-   cur.close()
-   conn.close()
-   return res
+   def getNASAddress(self, name):
+      cur = self.conn.cursor()
+      cur.execute("SELECT address FROM nodes WHERE type='STORAGE' AND name='"+name+"';")
+      res = cur.fetchall()
+      cur.close()
+      return res[0]
 
-def deleteInstance(domain):
-   conn = connect()
-   cur = conn.cursor()
-   cur.execute("DELETE FROM instances WHERE domain='"+domain+"';")
-   cur.close()
-   conn.close()
+   def getImageData(self, name):
+      cur = self.conn.cursor(pymysql.cursors.DictCursor)
+      cur.execute("SELECT * FROM images WHERE name='"+name+"';")
+      res = cur.fetchone()
+      cur.close()
+      return res
 
-def insertInstance(domain, ip):
-   conn = connect()
-   cur = conn.cursor()
-   cur.execute("INSERT INTO instances VALUES ("+domain+","+ip+");")
-   cur.close()
-   conn.close()
+   def getProfileData(self, name):
+      cur = self.conn.cursor(pymysql.cursors.DictCursor)
+      cur.execute("SELECT * FROM profiles WHERE name='"+name+"';")
+      res = cur.fetchone()
+      cur.close()
+      return res
 
-def updateNode(name, address, tpe):
-   conn = connect()
-   cur = conn.cursor()
-   cur.execute("INSERT INTO node VALUES ('" + name + "','" + address +         \
-               "','" + tpe + "') on duplicate key UPDATE address='" +          \
-               address + "');")
-   cur.commit()
-   cur.close()
-   conn.close()
+   def getComputeNodeAddresses(self):
+      cur = self.conn.cursor()
+      cur.execute("SELECT address FROM node WHERE type='COMPUTE';")
+      res = cur.fetchall()
+      cur.close()
+      return res
+
+   def deleteInstance(self, domain):
+      cur = self.conn.cursor()
+      cur.execute("DELETE FROM instances WHERE domain='"+domain+"';")
+      cur.close()
+
+   def insertInstance(self, domain, ip, node, owner):
+      cur = self.conn.cursor()
+      cur.execute("INSERT INTO instances VALUES ('"+domain+"','"+ip+"','"+node+"','"+owner+"');")
+      cur.close()
+
+   def insertNode(self, name, address, tpe):
+      cur = self.conn.cursor()
+      res = cur.execute("INSERT INTO nodes VALUES ('" + name + "','" + address +         \
+		  "','" + tpe + "') on duplicate key UPDATE address='" +          \
+	          address + "';")
+      cur.close()
+
+   def deleteNodeByName(self, name):
+      cur = self.conn.cursor()
+      cur.execute("DELETE FROM nodes WHERE name='"+name+"';")
+      cur.close()
+
+   def deleteNodeByIP(self, ip):
+      cur = self.conn.cursor()
+      cur.execute("DELETE FROM nodes WHERE address='"+ip+"';")
+      cur.close()

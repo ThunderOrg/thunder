@@ -43,7 +43,6 @@ class RequestHandler(socketserver.BaseRequestHandler):
             else:
                 self.processTraditionalRequest(decodedData.split())
 
-        # close the connection
         self.request.close()
         return
 
@@ -91,17 +90,16 @@ class RequestHandler(socketserver.BaseRequestHandler):
             fp.close()
             self.request.sendall(websock.encode(Opcode.text, result[:-1]))
 
-        elif (data[0] == 'GETIMAGES'):
-            nasAddr = getNASAddress()
-            if (nasAddr != None):
-                # mount NAS images repo
-                # store image listing in array
-                # unmount NAS
-                pass
-
+        elif (data[0] == 'INSTANTIATE'):
+            nodes = clients.get("Compute")
+            message = data[0] + ' ' + data[1] + ' ' + data[2]
+            # TODO: Node selection algorithm (Balance vs Consolidation)
+            response = self.container.publishToHost(nodes[0], message)
+            self.request.sendall(websock.encode(Opcode.text, response))
         # for debugging purposes, lets print out the data for all other cases
         else:
-            print(data)
+            print("DATA:",data)
+
         return
 
     def processTraditionalRequest(self, data):
@@ -118,7 +116,8 @@ class RequestHandler(socketserver.BaseRequestHandler):
 
             # call the function and get the result
             response = func(data[0],params)
-
+            respList = response.split()
+               
             if (response != None):
                 # send the result to the caller
                 self.request.sendall(str(response).encode('UTF8'))
@@ -151,4 +150,8 @@ class RequestHandler(socketserver.BaseRequestHandler):
         # check if the caller is sending a heartbeat
         elif (data[0] == 'HEARTBEAT'):
             self.request.sendall(data[0].encode('UTF8'))
+
+        else:
+            print(data)
+
         return

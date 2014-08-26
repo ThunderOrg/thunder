@@ -21,6 +21,12 @@ def getIP(interface):
                     return item.split(':')[1].split()[0]
     return '127.0.0.1'
 
+def getInterfaceFromIP(ip):
+    cmd = "ifconfig | grep -B1 \"inet addr:{0:s}\" | awk '{print $1}' | head -n1".format(ip)
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    ifconfig = p.communicate()[0]
+    return ifconfig
+
 # get the MAC address of the desired networking interface
 def getMAC(interface):
     p = subprocess.Popen(['/sbin/ifconfig', interface.strip()],                \
