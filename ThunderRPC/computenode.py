@@ -10,7 +10,6 @@ from mysql_support import mysql
 from thunder import *
 from smb.SMBHandler import SMBHandler
 from uuid import uuid1
-from xml.etree import ElementTree
 from time import sleep
 
 def instantiate(*params):
@@ -33,13 +32,16 @@ def instantiate(*params):
    diskPath = domain + ".img"
    configPath = domain + ".config"
 
+   myConnector.insertInstance("NA", "NA", client.name, username, name)
+
    copyFromNAS(image['disk'], image['directory'], diskPath, nas)
    copyFromNAS(image['config'], image['directory'], configPath, nas)
 
    virtHelper = subprocess.Popen(['./cloneAndInstall.sh', diskPath, configPath, domain], stdout=subprocess.PIPE)
    out, err = virtHelper.communicate()
    ip = out.decode().rstrip()
-   myConnector.insertInstance(domain, ip, client.name, username)
+
+   myConnector.insertInstance(domain, ip, client.name, username, name)
    myConnector.disconnect()
 
    return domain+":"+ip 

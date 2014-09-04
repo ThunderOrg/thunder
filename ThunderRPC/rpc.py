@@ -5,6 +5,7 @@
 
 import auth, socket, socketserver, threading
 from websocket import *
+from mysql_support import *
 
 # Each request should be given an independent thread, each handled by
 # the RequestHandler class
@@ -91,12 +92,19 @@ class RequestHandler(socketserver.BaseRequestHandler):
             self.request.sendall(websock.encode(Opcode.text, result[:-1]))
 
         elif (data[0] == 'INSTANTIATE'):
-            nodes = clients.get("Compute")
+            nodes = clients.get("COMPUTE")
             message = data[0] + ' ' + data[1] + ' ' + data[2]
             # TODO: Node selection algorithm (Balance vs Consolidation)
             response = self.container.publishToHost(nodes[0], message)
             self.request.sendall(websock.encode(Opcode.text, response))
         # for debugging purposes, lets print out the data for all other cases
+        elif (data[0] == 'GETUSERINSTANCES'):
+            username = data[1]
+            myConnector = mysql(self.container.addr[0], 3306)
+            myConnector.connect() 
+            instances = myConnector.getUserInstances(username)
+            myConnector.disconnect()
+            self.request.sendall(websock.encode(Opcode.text, instances))
         else:
             print("DATA:",data)
 

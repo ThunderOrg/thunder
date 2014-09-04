@@ -46,14 +46,31 @@ class mysql():
       cur.close()
       return res
 
+   def getUserInstances(self, user):
+      cur = self.conn.cursor()
+      cur.execute("SELECT domain, ip, node, profile FROM instances WHERE owner='"+user+"';")
+      
+      res = cur.fetchall()
+      res = [list(row) for row in res]
+      cur.close()
+      return str(res)
+
    def deleteInstance(self, domain):
       cur = self.conn.cursor()
       cur.execute("DELETE FROM instances WHERE domain='"+domain+"';")
       cur.close()
 
-   def insertInstance(self, domain, ip, node, owner):
+   def insertInstance(self, domain, ip, node, owner, profile):
       cur = self.conn.cursor()
-      cur.execute("INSERT INTO instances VALUES ('"+domain+"','"+ip+"','"+node+"','"+owner+"');")
+      cur.execute("INSERT INTO instances VALUES ('"+domain+"','"+ip+"','"+node+"','"+owner+ \
+                  "','"+profile+"') on duplicate key UPDATE ip='" + ip + "', domain='" + domain + "';")
+      cur.close()
+
+   def insertNode(self, name, address, tpe):
+      cur = self.conn.cursor()
+      res = cur.execute("INSERT INTO nodes VALUES ('" + name + "','" + address +         \
+		  "','" + tpe + "') on duplicate key UPDATE address='" +          \
+	          address + "';")
       cur.close()
 
    def insertNode(self, name, address, tpe):
