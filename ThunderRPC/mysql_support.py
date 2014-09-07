@@ -96,3 +96,10 @@ class mysql():
       cur = self.conn.cursor()
       cur.execute("DELETE FROM nodes WHERE address='"+ip+"';")
       cur.close()
+
+   def getWeights(self, id):
+      cur = self.conn.cursor()
+      cur.execute("SELECT * FROM weights WHERE id='"+id+"';")
+      res = cur.fetchone()
+      cur.close()
+      return res

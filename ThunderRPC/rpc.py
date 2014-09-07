@@ -3,7 +3,7 @@
 # The University of Alabama
 # Cloud and Cluster Computer Group
 
-import auth, socket, socketserver, threading, libvirt
+import auth, socket, socketserver, threading, libvirt, load_balancer
 from websocket import *
 from mysql_support import *
 
@@ -94,10 +94,15 @@ class RequestHandler(socketserver.BaseRequestHandler):
         elif (data[0] == 'INSTANTIATE'):
             nodes = clients.get("COMPUTE")
             message = data[0] + ' ' + data[1] + ' ' + data[2]
-            selectedNode = nodes[0]
-            load = self.container.publishToHost(selectedNode, "UTILIZATION")
-            print(load)
-            # TODO: Node selection algorithm (Balance vs Consolidation)
+            load = [self.container.publishToHost(nodes[0], "UTILIZATION")]
+            for i in range(1,len(nodes),1):
+               load += [self.container.publishToHost(nodes[i], "UTILIZATION")]
+            myConnector = mysql(self.container.addr[0], 3306)
+            myConnector.connect()
+            weights = myConnector.getWeights("balance")
+            myConnector.disconnect()
+            index = load_balancer.select(load, weights)
+            selectedNode = nodes[index]
             response = self.container.publishToHost(selectedNode, message)
             self.request.sendall(websock.encode(Opcode.text, response))
         # for debugging purposes, lets print out the data for all other cases
