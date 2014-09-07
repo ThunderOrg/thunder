@@ -32,8 +32,6 @@ def instantiate(*params):
    diskPath = domain + ".img"
    configPath = domain + ".config"
 
-   myConnector.insertInstance("NA", "NA", client.name, username, name)
-
    copyFromNAS(image['disk'], image['directory'], diskPath, nas)
    copyFromNAS(image['config'], image['directory'], configPath, nas)
 
@@ -43,10 +41,11 @@ def instantiate(*params):
 
    myConnector.insertInstance(domain, ip, client.name, username, name)
    myConnector.disconnect()
-
-   return domain+":"+ip 
+   return "success"
 
 def destroy(*params):
+   args = params[1]
+   domain = args[0]
    subprocess.Popen(['./destroyVM.sh', domain], stdout=subprocess.PIPE)
    myConnector = mysql(publisher, 3306)
    myConnector.connect()

@@ -3,7 +3,7 @@
 # The University of Alabama
 # Cloud and Cluster Computer Group
 
-import auth, socket, socketserver, threading
+import auth, socket, socketserver, threading, libvirt
 from websocket import *
 from mysql_support import *
 
@@ -94,14 +94,26 @@ class RequestHandler(socketserver.BaseRequestHandler):
         elif (data[0] == 'INSTANTIATE'):
             nodes = clients.get("COMPUTE")
             message = data[0] + ' ' + data[1] + ' ' + data[2]
+            selectedNode = nodes[0]
+            load = self.container.publishToHost(selectedNode, "UTILIZATION")
+            print(load)
             # TODO: Node selection algorithm (Balance vs Consolidation)
-            response = self.container.publishToHost(nodes[0], message)
+            response = self.container.publishToHost(selectedNode, message)
             self.request.sendall(websock.encode(Opcode.text, response))
         # for debugging purposes, lets print out the data for all other cases
         elif (data[0] == 'GETUSERINSTANCES'):
             username = data[1]
             myConnector = mysql(self.container.addr[0], 3306)
             myConnector.connect() 
+            instances = myConnector.getUserInstances(username)
+            for instance in eval(instances):
+               node = myConnector.getNodeByName(instance[2]) 
+               nodeAddr = node[1].split(':')
+               nodeAddr = (nodeAddr[0],int(nodeAddr[1]))
+               message = "CHECKINSTANCE " + instance[0]
+               response = self.container.publishToHost(nodeAddr, message) 
+               if (response.split(':')[1] == "error"):
+                  myConnector.deleteInstance(instance[0])
             instances = myConnector.getUserInstances(username)
             myConnector.disconnect()
             self.request.sendall(websock.encode(Opcode.text, instances))
@@ -158,6 +170,17 @@ class RequestHandler(socketserver.BaseRequestHandler):
         # check if the caller is sending a heartbeat
         elif (data[0] == 'HEARTBEAT'):
             self.request.sendall(data[0].encode('UTF8'))
+
+        elif (data[0] == 'CHECKINSTANCE'):
+            virtcon = libvirt.openReadOnly(None)
+            if (virtcon == None):
+               self.request.sendall('error'.encode('UTF8'))
+            try:
+               virtcon.lookupByName(data[1])
+               self.request.sendall('success'.encode('UTF8'))
+            except:
+               self.request.sendall('error'.encode('UTF8'))
+            virtcon.close()
 
         else:
             print(data)

@@ -21,9 +21,9 @@ class mysql():
    def getNASAddress(self, name):
       cur = self.conn.cursor()
       cur.execute("SELECT address FROM nodes WHERE type='STORAGE' AND name='"+name+"';")
-      res = cur.fetchall()
+      res = cur.fetchone()
       cur.close()
-      return res[0]
+      return res
 
    def getImageData(self, name):
       cur = self.conn.cursor(pymysql.cursors.DictCursor)
@@ -84,6 +84,13 @@ class mysql():
       cur = self.conn.cursor()
       cur.execute("DELETE FROM nodes WHERE name='"+name+"';")
       cur.close()
+
+   def getNodeByName(self, name):
+      cur = self.conn.cursor()
+      cur.execute("SELECT * FROM nodes WHERE name='"+name+"';")
+      res = cur.fetchone()
+      cur.close()
+      return res
 
    def deleteNodeByIP(self, ip):
       cur = self.conn.cursor()
