@@ -6,11 +6,12 @@ echo $#
 echo "Preseeding the MySQL database with values."
 echo "------------------------------------------------"
 echo "Password is 'thunder' by default."
-if [ $# -eq 1 ]
+if [ $# -eq 2 ]
 then
    sed "s/<IP>/$1/g" preseed.sql > tmp
+   sed "s/<MAC>/$2/g" tmp > tmp
 else
-   echo You must enter a NAS IP address!
+   echo You must enter a NAS IP and MAC address!
    exit
 fi
 mysql -f -uroot -p < tmp

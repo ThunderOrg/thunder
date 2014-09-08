@@ -121,7 +121,25 @@ class RequestHandler(socketserver.BaseRequestHandler):
                   myConnector.deleteInstance(instance[0])
             instances = myConnector.getUserInstances(username)
             myConnector.disconnect()
-            self.request.sendall(websock.encode(Opcode.text, instances))
+            self.request.sendall(websock.encode(Opcode.text, username+":"+instances))
+        elif (data[0] == 'DESTROYINSTANCE'):
+            username = data[1]
+            domain = data[2]
+            myConnector = mysql(self.container.addr[0], 3306)
+            myConnector.connect()
+            instances = myConnector.getUserInstances(username)
+            result = 'error'
+            for instance in eval(instances):
+               if (instance[0] == domain):
+                  node = myConnector.getNodeByName(instance[2])
+                  nodeAddr = node[1].split(':')
+                  nodeAddr = (nodeAddr[0],int(nodeAddr[1]))
+                  message = "DESTROY " + instance[0]
+                  self.container.publishToHost(nodeAddr, message)
+                  result = 'success'
+                  break
+            myConnector.disconnect()
+            self.request.sendall(websock.encode(Opcode.text, result))
         else:
             print("DATA:",data)
 

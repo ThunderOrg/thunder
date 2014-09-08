@@ -46,11 +46,14 @@ def instantiate(*params):
 def destroy(*params):
    args = params[1]
    domain = args[0]
-   subprocess.Popen(['./destroyVM.sh', domain], stdout=subprocess.PIPE)
+   vmDestructor = subprocess.Popen(['./destroyVM.sh', domain], stdout=subprocess.PIPE)
+   vmDestructor.communicate()
+   publisher = client.publisher[0]
    myConnector = mysql(publisher, 3306)
    myConnector.connect()
    myConnector.deleteInstance(domain)
    myConnector.disconnect()
+   return 'success'
 
 def copyFromNAS(imageName, directory, name, server):
    # Create a temp file for the image
