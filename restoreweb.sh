@@ -11,9 +11,9 @@ SIZE=${#SORTED_FILES[@]}
 LATEST=${SORTED_FILES[$SIZE-1]}
 
 echo "Removing old www contents"
-rm -r /var/www/*
+rm -r /var/www/html/*
 
 echo "Restoring backup: $LATEST"
-tar -xzf $DIR/$LATEST -C /var/www/
+tar -xzf $DIR/$LATEST -C /var/www/html
 
 chown -R thunder:thunder /var/www
