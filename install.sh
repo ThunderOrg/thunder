@@ -31,6 +31,10 @@ easy_install3 pip
 pip install PyMySQL
 mkdir -p /srv/thunder 
 cd /srv
+git clone https://github.com/paranoidgabe/pysmb.git
+cd pysmb
+python3 setup.py install
+cd ..
 git clone https://github.com/paranoidgabe/thunder.git
 cd thunder
 ./restoreweb.sh
