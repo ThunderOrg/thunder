@@ -25,7 +25,7 @@ MAC=`ifconfig $BRIDGE | grep 'HWaddr ' | awk '{ print $5}'`
 debconf-set-selections <<< 'mysql-server mysql-server/root_password password thunder'
 debconf-set-selections <<< 'mysql-server mysql-server/root_password_again password thunder'
 
-apt-get -y install build-essential python3 python3-dev apache2 mysql-server python3-crypto php5 python3-setuptools samba git libapache2-mod-php5 pyp5-mysql php5-memcache php5-memcached memcached
+apt-get -y install build-essential python3 python3-dev apache2 mysql-server python3-crypto php5 python3-setuptools samba git libapache2-mod-php5 php5-mysql php5-memcache php5-memcached memcached
 
 easy_install3 pip
 pip3 install PyMySQL
