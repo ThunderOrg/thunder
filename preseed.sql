@@ -19,6 +19,17 @@
 -- Table structure for table `images`
 --
 
+CREATE DATABASE thunder;
+
+CREATE USER 'thunder'@'%' IDENTIFIED BY 'thunder';
+CREATE USER 'thunder'@'localhost' IDENTIFIED BY 'thunder';
+CREATE USER 'thunder'@'0.0.0.0' IDENTIFIED BY 'thunder';
+GRANT ALL PRIVILEGES ON thunder.* TO 'thunder'@'%';
+GRANT ALL PRIVILEGES ON thunder.* TO 'thunder'@'localhost';
+GRANT ALL PRIVILEGES ON thunder.* TO 'thunder'@'0.0.0.0';
+
+USE thunder;
+
 DROP TABLE IF EXISTS `images`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -39,7 +50,7 @@ CREATE TABLE `images` (
 
 LOCK TABLES `images` WRITE;
 /*!40000 ALTER TABLE `images` DISABLE KEYS */;
-INSERT INTO `images` VALUES ('ubuntu','ubuntu','disk.img','config.img','qcow2','74:27:ea:4a:67:68');
+INSERT INTO `images` VALUES ('ubuntu','ubuntu','disk.img','config.img','qcow2','<MAC>');
 /*!40000 ALTER TABLE `images` ENABLE KEYS */;
 UNLOCK TABLES;
 
