@@ -97,9 +97,21 @@ class mysql():
       cur.execute("DELETE FROM nodes WHERE address='"+ip+"';")
       cur.close()
 
-   def getWeights(self, id):
+   def updateWeights(self, name, weights):
       cur = self.conn.cursor()
-      cur.execute("SELECT * FROM weights WHERE id='"+id+"';")
+      ram = weights[0]
+      load1 = weights[1]
+      load5 = weights[2]
+      load15 = weights[3]
+      activevms = weights[4]
+      cur.execute("UPDATE weights SET ram='" + ram + "', load1='" + load1 + \
+                  "', load5='" + load5 + "', load15='" + load15 +           \
+                  "', activevms='"+activevms+"' WHERE id='"+name+"';")
+      cur.close()
+
+   def getWeights(self, name):
+      cur = self.conn.cursor()
+      cur.execute("SELECT ram, load1, load5, load15, activevms FROM weights WHERE id='"+name+"';")
       res = cur.fetchone()
       cur.close()
       return res

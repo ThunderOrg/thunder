@@ -3,25 +3,27 @@
 # The University of Alabama
 # Cloud and Cluster Computer Group
 
-import auth, socket, socketserver, threading, libvirt, load_balancer
+import auth, socket, socketserver, threading, libvirt, load_balancer, subprocess
 from websocket import *
 from mysql_support import *
+
 
 # Each request should be given an independent thread, each handled by
 # the RequestHandler class
 class ThunderRPCServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
-    def setup(self):
-        self.daemon_threads = true
+    pass
 
 # Handler class for handling incoming connections
 class RequestHandler(socketserver.BaseRequestHandler):
     def setup(self):
+        self.daemon_threads = True
         self.request.setsockopt(socket.IPPROTO_TCP,socket.TCP_NODELAY, True)
+        self.request.setblocking(1)
         return
 
     def handle(self):
         self.container = self.server._ThunderRPCInstance
-        self.data = self.request.recv(1024)
+        self.data = self.request.recv(4096)
         websock = websocket(self.request)
         decodedData = ''
         ws = False
@@ -31,7 +33,8 @@ class RequestHandler(socketserver.BaseRequestHandler):
         if (websock.isHandshakePending(self.data)):
             handshake = websock.handshake(self.data.decode())
             self.request.sendall(handshake)
-            decodedData = websock.decode().strip()
+            d = self.request.recv(2)
+            decodedData = websock.decode(d).strip()
             ws = True
         # Else, it could be coming from a peer (cloud server)
         else:
@@ -79,16 +82,14 @@ class RequestHandler(socketserver.BaseRequestHandler):
         # check if the client is requesting the server to poll for mac
         # addresses, used for deployment
         elif (data[0] == 'POLLMACS'):
-            iface = self.container.interface
-            fname = ['./macdump.sh', int(data[1]), iface]
-            p = subprocess.Popen(fname, stdout=subprocess.PIPE,                \
+            p = subprocess.Popen("./capturemacs.sh", stdout=subprocess.PIPE,                \
                                  stderr=subprocess.PIPE)
-            p.communicate()[0]
-            fp = open("./mac.list", "r")
-            result = ''
-            for line in fp:
-                result+=line.strip() + ";"
-            fp.close()
+            out, err = p.communicate()
+            macs = out.decode().rstrip().split('\n')
+            result = ""
+            for mac in macs:
+                result+=mac.strip() + ";"
+            print(result)
             self.request.sendall(websock.encode(Opcode.text, result[:-1]))
 
         elif (data[0] == 'INSTANTIATE'):
@@ -140,6 +141,24 @@ class RequestHandler(socketserver.BaseRequestHandler):
                   break
             myConnector.disconnect()
             self.request.sendall(websock.encode(Opcode.text, result))
+
+        elif (data[0] == "MLBCONSTANTS"):
+            myConnector = mysql(self.container.addr[0], 3306)
+            myConnector.connect()
+            weights = myConnector.getWeights("balance")
+            result = ""
+            for weight in weights:
+               result += str(weight) + ";"
+            myConnector.disconnect()
+            self.request.sendall(websock.encode(Opcode.text, result[0:-1]))
+
+        elif (data[0] == "UPDATEMLB"):
+            myConnector = mysql(self.container.addr[0], 3306)
+            myConnector.connect()
+            myConnector.updateWeights("balance", data[1:])
+            myConnector.disconnect()
+            self.request.sendall(websock.encode(Opcode.text, "MLB Constants Update: SUCCESS"))
+
         else:
             print("DATA:",data)
 

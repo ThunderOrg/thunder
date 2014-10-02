@@ -1,3 +1,5 @@
+#!/bin/bash
+
 awk ' { out = ""} \
       { $1=="lease"||$1=="client-hostname" ? out=" " $2: out=out } \
       { $1=="binding"||$1=="hardware" ? out= " " $3: out=out } \
@@ -12,5 +14,6 @@ arp -a \
   | sed -e s/\\..*\(/\ / -e s/\)// \
   | awk '{ printf "%-17s\n", $4}' >> tmp.lst
 
-cat tmp.lst | grep -Eo '^([0-9a-fA-F][0-9a-fA-F]:){5}([0-9a-fA-F][0-9a-fA-F])$' | sort -u
-rm tmp.lst
+cat tmp.lst \
+  | grep -Eo '^([0-9a-fA-F][0-9a-fA-F]:){5}([0-9a-fA-F][0-9a-fA-F])$' \
+  | sort -u
