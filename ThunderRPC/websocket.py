@@ -54,9 +54,9 @@ class websocket:
                  '\r\nConnection: Upgrade\r\n'
       dataArr = data.splitlines()
       key = ''
-      for i in range(0, len(dataArr), 1):
-         if (dataArr[i].startswith('Sec-WebSocket-Key')):
-            key = dataArr[i].split(': ')[1]
+      for datum in dataArr:
+         if (datum.startswith('Sec-WebSocket-Key')):
+            key = datum.split(': ')[1]
       if (key == ''):
          return False
       retKey = b64encode(sha1((key+self.magic).encode("UTF8")).digest())

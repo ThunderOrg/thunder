@@ -1,5 +1,7 @@
 import os
 import platform
+import libvirt
+from config import *
 
 def utilization(*params):
    # extract the tag and data
@@ -20,7 +22,27 @@ def utilization(*params):
    fiveMin = data[1]
    fifteenMin = data[2]
 
-   retVal = memtotal + ":" + memfree + ":" + oneMin + ":" + fiveMin + ":" + fifteenMin
+   nproc = open('/proc/cpuinfo', 'r')
+   num_proc = 0
+   for line in nproc:
+      if (line[:9] == "processor"):
+         num_proc += 1
+
+   num_proc *= int(constants.get('default.vcoresPerCore'))
+
+   activeVCores = 0
+
+   conn = libvirt.open() 
+   for dom in conn.listAllDomains():
+      activeVCores += int(dom.info()[3])
+   conn.close()
+
+   retVal = memtotal + ":" + memfree + ":" + oneMin + ":" + fiveMin + ":" \
+                     + fifteenMin + ":" + str(num_proc) + ":" \
+                     + str(activeVCores)
+
+   print(retVal)
+   
    return retVal
 
 def sysInfo(*params):

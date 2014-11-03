@@ -1,5 +1,7 @@
 #!/bin/bash
 
+nmap -PR -sP 10.10.0.0/16 > /dev/null 2>&1
+
 awk ' { out = ""} \
       { $1=="lease"||$1=="client-hostname" ? out=" " $2: out=out } \
       { $1=="binding"||$1=="hardware" ? out= " " $3: out=out } \

@@ -23,7 +23,8 @@ class RequestHandler(socketserver.BaseRequestHandler):
 
     def handle(self):
         self.container = self.server._ThunderRPCInstance
-        self.data = self.request.recv(4096)
+        self.data = self.request.recv(1024)
+        print(self.data)
         websock = websocket(self.request)
         decodedData = ''
         ws = False
@@ -89,20 +90,19 @@ class RequestHandler(socketserver.BaseRequestHandler):
             result = ""
             for mac in macs:
                 result+=mac.strip() + ";"
-            print(result)
             self.request.sendall(websock.encode(Opcode.text, result[:-1]))
 
         elif (data[0] == 'INSTANTIATE'):
             nodes = clients.get("COMPUTE")
             message = data[0] + ' ' + data[1] + ' ' + data[2]
             load = [self.container.publishToHost(nodes[0], "UTILIZATION")]
-            for i in range(1,len(nodes),1):
-               load += [self.container.publishToHost(nodes[i], "UTILIZATION")]
+            for node in nodes[1:]:
+               load += [self.container.publishToHost(node, "UTILIZATION")]
             myConnector = mysql(self.container.addr[0], 3306)
             myConnector.connect()
             weights = myConnector.getWeights("balance")
             myConnector.disconnect()
-            index = load_balancer.select(load, weights)
+            index = 0#load_balancer.select(load, weights)
             selectedNode = nodes[index]
             response = self.container.publishToHost(selectedNode, message)
             self.request.sendall(websock.encode(Opcode.text, response))
@@ -142,7 +142,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
             myConnector.disconnect()
             self.request.sendall(websock.encode(Opcode.text, result))
 
-        elif (data[0] == "MLBCONSTANTS"):
+        elif (data[0] == "RAINCONSTANTS"):
             myConnector = mysql(self.container.addr[0], 3306)
             myConnector.connect()
             weights = myConnector.getWeights("balance")
@@ -152,13 +152,43 @@ class RequestHandler(socketserver.BaseRequestHandler):
             myConnector.disconnect()
             self.request.sendall(websock.encode(Opcode.text, result[0:-1]))
 
-        elif (data[0] == "UPDATEMLB"):
+        elif (data[0] == "UPDATERAIN"):
             myConnector = mysql(self.container.addr[0], 3306)
             myConnector.connect()
             myConnector.updateWeights("balance", data[1:])
             myConnector.disconnect()
-            self.request.sendall(websock.encode(Opcode.text, "MLB Constants Update: SUCCESS"))
+            self.request.sendall(websock.encode(Opcode.text, "RAIN Constants Update: SUCCESS"))
 
+        elif (data[0] == "IMAGELIST"):
+            myConnector = mysql(self.container.addr[0], 3306)
+            myConnector.connect()
+            images = myConnector.getImages();
+            myConnector.disconnect()
+            result = ""
+            for image in images:
+               result += image[0] + ";"
+            self.request.sendall(websock.encode(Opcode.text, result[0:-1]))
+
+        elif (data[0] == "PACKAGELIST"):
+            myConnector = mysql(self.container.addr[0], 3306)
+            myConnector.connect()
+            images = myConnector.getImages();
+            myConnector.disconnect()
+            result = ""
+            for image in images:
+               result += image[0] + ";"
+            self.request.sendall(websock.encode(Opcode.text, result[0:-1]))
+
+        elif (data[0] == "PROFILEINFO"):
+            myConnector = mysql(self.container.addr[0], 3306)
+            myConnector.connect()
+            profile = myConnector.getProfile(data[1]);
+            myConnector.disconnect()
+            result = ""
+            for datum in profile:
+               result += str(datum) + ";"
+            self.request.sendall(websock.encode(Opcode.text, result[0:-1]))
+         
         else:
             print("DATA:",data)
 
@@ -173,8 +203,8 @@ class RequestHandler(socketserver.BaseRequestHandler):
         if (events.contains(data[0])):
             func = events.get(data[0])
             params = []
-            for i in range(1, len(data), 1):
-                params += [data[i]]
+            for datum in data[1:]:
+                params += [datum]
 
             # call the function and get the result
             response = func(data[0],params)

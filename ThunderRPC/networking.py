@@ -28,25 +28,16 @@ def getInterfaceFromIP(ip):
     return ifconfig
 
 # get the MAC address of the desired networking interface
-def getMAC(interface):
-    p = subprocess.Popen(['/sbin/ifconfig', interface.strip()],                \
-                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    ifconfig = p.communicate()[0]
-    if (ifconfig):
-        data = ifconfig.decode().split('\n')
-        for item in data:
-            itemArr = item.strip().split()
-            found = False
-            for field in itemArr:
-                if (found):
-                    return field.strip()
-                # find the MAC address from the ifconfig output
-                elif (field.lower() == 'hwaddr'):
-                    found = True
-    return None
+def getMAC(node):
+    hexMac = hex(node)
+    mac = ""
+    for i in range(2,len(hexMac),2):
+       mac+=hexMac[i]+hexMac[i+1]+":"
+    print(mac[:-1])
+    return mac[:-1]
 
 # parse the local IP routing table for entries
-def ipRouteList(self):
+def ipRouteList():
     addresses = []
     p = subprocess.Popen(['/sbin/ip', 'route', 'list'], stdout=subprocess.PIPE,\
                          stderr=subprocess.PIPE)

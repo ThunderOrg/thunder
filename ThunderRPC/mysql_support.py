@@ -115,3 +115,17 @@ class mysql():
       res = cur.fetchone()
       cur.close()
       return res
+
+   def getImages(self):
+      cur = self.conn.cursor()
+      cur.execute("SELECT name FROM images;")
+      res = cur.fetchall()
+      cur.close()
+      return res
+
+   def getProfile(self, name):
+      cur = self.conn.cursor()
+      cur.execute("SELECT * FROM profiles WHERE name='" + name + "';")
+      res = cur.fetchone()
+      cur.close()
+      return res
