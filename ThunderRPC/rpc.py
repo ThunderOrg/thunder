@@ -3,25 +3,28 @@
 # The University of Alabama
 # Cloud and Cluster Computer Group
 
-import auth, socket, socketserver, threading, libvirt, load_balancer
+import auth, socket, socketserver, threading, libvirt, load_balancer, subprocess
 from websocket import *
 from mysql_support import *
+
 
 # Each request should be given an independent thread, each handled by
 # the RequestHandler class
 class ThunderRPCServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
-    def setup(self):
-        self.daemon_threads = true
+    pass
 
 # Handler class for handling incoming connections
 class RequestHandler(socketserver.BaseRequestHandler):
     def setup(self):
+        self.daemon_threads = True
         self.request.setsockopt(socket.IPPROTO_TCP,socket.TCP_NODELAY, True)
+        self.request.setblocking(1)
         return
 
     def handle(self):
         self.container = self.server._ThunderRPCInstance
         self.data = self.request.recv(1024)
+        print(self.data)
         websock = websocket(self.request)
         decodedData = ''
         ws = False
@@ -31,7 +34,8 @@ class RequestHandler(socketserver.BaseRequestHandler):
         if (websock.isHandshakePending(self.data)):
             handshake = websock.handshake(self.data.decode())
             self.request.sendall(handshake)
-            decodedData = websock.decode().strip()
+            d = self.request.recv(2)
+            decodedData = websock.decode(d).strip()
             ws = True
         # Else, it could be coming from a peer (cloud server)
         else:
@@ -79,29 +83,26 @@ class RequestHandler(socketserver.BaseRequestHandler):
         # check if the client is requesting the server to poll for mac
         # addresses, used for deployment
         elif (data[0] == 'POLLMACS'):
-            iface = self.container.interface
-            fname = ['./macdump.sh', int(data[1]), iface]
-            p = subprocess.Popen(fname, stdout=subprocess.PIPE,                \
+            p = subprocess.Popen("./capturemacs.sh", stdout=subprocess.PIPE,                \
                                  stderr=subprocess.PIPE)
-            p.communicate()[0]
-            fp = open("./mac.list", "r")
-            result = ''
-            for line in fp:
-                result+=line.strip() + ";"
-            fp.close()
+            out, err = p.communicate()
+            macs = out.decode().rstrip().split('\n')
+            result = ""
+            for mac in macs:
+                result+=mac.strip() + ";"
             self.request.sendall(websock.encode(Opcode.text, result[:-1]))
 
         elif (data[0] == 'INSTANTIATE'):
             nodes = clients.get("COMPUTE")
             message = data[0] + ' ' + data[1] + ' ' + data[2]
             load = [self.container.publishToHost(nodes[0], "UTILIZATION")]
-            for i in range(1,len(nodes),1):
-               load += [self.container.publishToHost(nodes[i], "UTILIZATION")]
+            for node in nodes[1:]:
+               load += [self.container.publishToHost(node, "UTILIZATION")]
             myConnector = mysql(self.container.addr[0], 3306)
             myConnector.connect()
             weights = myConnector.getWeights("balance")
             myConnector.disconnect()
-            index = load_balancer.select(load, weights)
+            index = 0#load_balancer.select(load, weights)
             selectedNode = nodes[index]
             response = self.container.publishToHost(selectedNode, message)
             self.request.sendall(websock.encode(Opcode.text, response))
@@ -140,6 +141,54 @@ class RequestHandler(socketserver.BaseRequestHandler):
                   break
             myConnector.disconnect()
             self.request.sendall(websock.encode(Opcode.text, result))
+
+        elif (data[0] == "RAINCONSTANTS"):
+            myConnector = mysql(self.container.addr[0], 3306)
+            myConnector.connect()
+            weights = myConnector.getWeights("balance")
+            result = ""
+            for weight in weights:
+               result += str(weight) + ";"
+            myConnector.disconnect()
+            self.request.sendall(websock.encode(Opcode.text, result[0:-1]))
+
+        elif (data[0] == "UPDATERAIN"):
+            myConnector = mysql(self.container.addr[0], 3306)
+            myConnector.connect()
+            myConnector.updateWeights("balance", data[1:])
+            myConnector.disconnect()
+            self.request.sendall(websock.encode(Opcode.text, "RAIN Constants Update: SUCCESS"))
+
+        elif (data[0] == "IMAGELIST"):
+            myConnector = mysql(self.container.addr[0], 3306)
+            myConnector.connect()
+            images = myConnector.getImages();
+            myConnector.disconnect()
+            result = ""
+            for image in images:
+               result += image[0] + ";"
+            self.request.sendall(websock.encode(Opcode.text, result[0:-1]))
+
+        elif (data[0] == "PACKAGELIST"):
+            myConnector = mysql(self.container.addr[0], 3306)
+            myConnector.connect()
+            images = myConnector.getImages();
+            myConnector.disconnect()
+            result = ""
+            for image in images:
+               result += image[0] + ";"
+            self.request.sendall(websock.encode(Opcode.text, result[0:-1]))
+
+        elif (data[0] == "PROFILEINFO"):
+            myConnector = mysql(self.container.addr[0], 3306)
+            myConnector.connect()
+            profile = myConnector.getProfile(data[1]);
+            myConnector.disconnect()
+            result = ""
+            for datum in profile:
+               result += str(datum) + ";"
+            self.request.sendall(websock.encode(Opcode.text, result[0:-1]))
+         
         else:
             print("DATA:",data)
 
@@ -154,8 +203,8 @@ class RequestHandler(socketserver.BaseRequestHandler):
         if (events.contains(data[0])):
             func = events.get(data[0])
             params = []
-            for i in range(1, len(data), 1):
-                params += [data[i]]
+            for datum in data[1:]:
+                params += [datum]
 
             # call the function and get the result
             response = func(data[0],params)

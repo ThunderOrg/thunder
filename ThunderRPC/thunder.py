@@ -90,7 +90,7 @@ class ThunderRPC(threading.Thread):
         self._group = group
 
         # give this node an arbitrary name
-        self._name = str(getnode())+'_'+group
+        self._name = self.networking.getMAC(getnode())
  
         # set the default publisher to None
         self._publisher = None

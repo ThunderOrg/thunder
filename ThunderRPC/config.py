@@ -20,7 +20,8 @@ def parseConfig(fname):
             cIndex = len(val)
             # remove any ending comments
             for i in range(0, len(val), 1):
-                if (val[i] == '#'):
+                ch = val[i]
+                if (ch == '#'):
                     cIndex = i
                     break
             val = val[:cIndex].strip()

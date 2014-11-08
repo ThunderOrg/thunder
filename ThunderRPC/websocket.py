@@ -54,9 +54,9 @@ class websocket:
                  '\r\nConnection: Upgrade\r\n'
       dataArr = data.splitlines()
       key = ''
-      for i in range(0, len(dataArr), 1):
-         if (dataArr[i].startswith('Sec-WebSocket-Key')):
-            key = dataArr[i].split(': ')[1]
+      for datum in dataArr:
+         if (datum.startswith('Sec-WebSocket-Key')):
+            key = datum.split(': ')[1]
       if (key == ''):
          return False
       retKey = b64encode(sha1((key+self.magic).encode("UTF8")).digest())
@@ -79,14 +79,13 @@ class websocket:
       if (payloadLen < 126):
          header += pack('!B', payloadLen)
       elif (payloadLen < (1 << 16)):
-         header += pack('>B', 126) + pack('>H', payLoadLen)
+         header += pack('>B', 126) + pack('>H', payloadLen)
       elif (payloadLen < (1 << 63)):
          header += pack('>B', 127) + pack('>Q', payloadLen)
       return bytes(header + encodedData)
 
    # Read a hybi-13 websocket frame and unmask the payload.
-   def decode(self):
-      data = self.socket.recv(2)
+   def decode(self, data):
       payloadLen = data[1] & 127
       if (len == 126): # Two more bytes indicate length.  16-bits.
          payloadLen = unpack(">H", self.socket.recv(2))[0]

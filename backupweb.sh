@@ -18,7 +18,7 @@ if [[ -e $WD/$FNAME.$EXT ]]; then
 fi
 
 cd $WWW_ROOT
-tar -czf $FNAME.$EXT ./*
+tar --exclude='./ubuntu' -czf $FNAME.$EXT ./* 
 cd $WD
 
 mv $WWW_ROOT/$FNAME.$EXT $WD/$FNAME.$EXT
