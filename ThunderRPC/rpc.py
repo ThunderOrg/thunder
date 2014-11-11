@@ -241,7 +241,16 @@ class RequestHandler(socketserver.BaseRequestHandler):
                         clients.append((data[3], c))
         # check if the caller is sending a heartbeat
         elif (data[0] == 'HEARTBEAT'):
-            self.request.sendall(data[0].encode('UTF8'))
+            # check if the client is still registered
+            response = data[0]
+            if (len(clients.collection()) == 0):
+               response = "SUBSCRIBE"
+            else:
+               found = False
+               for group in clients.collection():
+                  for client in clients.get(group):
+                     print(client)
+            self.request.sendall(response.encode('UTF8'))
 
         elif (data[0] == 'CHECKINSTANCE'):
             virtcon = libvirt.openReadOnly(None)

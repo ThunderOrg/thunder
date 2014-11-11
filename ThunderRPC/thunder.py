@@ -206,6 +206,7 @@ class ThunderRPC(threading.Thread):
         try:
          sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         except AttributeError:
+         print("Attribute Error")
          pass
 
         # bind to all adapters
@@ -219,14 +220,15 @@ class ThunderRPC(threading.Thread):
         MCAST_PORT = int(constants.get('default.mcastport'))
         receiver = self.getMulticastingReceiver()
         while 1:
-         try:
-            data, addr = receiver.recvfrom(1024)
-            if (data.decode() == 'ROLE'):
-               # pack the role up with the client IP
-               response = self.role + "|" + addr[0]
-               receiver.sendto(response.encode('UTF8'), addr)
-         except:
-            pass
+           try:
+              data, addr = receiver.recvfrom(1024)
+              if (data.decode() == 'ROLE'):
+                 # pack the role up with the client IP
+                 response = self.role + "|" + addr[0]
+                 receiver.sendto(response.encode('UTF8'), addr)
+           except:
+              print("Multicast not received.")
+              pass
 
     # Attempt to locate a publisher (controller) on the network.
     def findPublisher(self):
@@ -251,6 +253,7 @@ class ThunderRPC(threading.Thread):
             except KeyboardInterrupt:
                 raise
             except:
+                print("Publisher not found, retrying.")
                 continue
         self.registerClient(address, self.group)
 
@@ -339,6 +342,10 @@ class ThunderRPC(threading.Thread):
             ret = self.publishToHost(self._publisher, 'HEARTBEAT')
             if (ret == None):
                 alive = False
+            else:
+                data = ret.split(':')
+                if (data[1] == "SUBSCRIBE"):
+                    alive = False
         self.findPublisher()
         return
 
