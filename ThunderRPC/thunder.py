@@ -339,7 +339,7 @@ class ThunderRPC(threading.Thread):
         alive = True
         while (alive):
             sleep(int(constants.get('heartbeat.interval')))
-            ret = self.publishToHost(self._publisher, 'HEARTBEAT')
+            ret = self.publishToHost(self._publisher, 'HEARTBEAT ' + str(self.addr[0]) + " " + str(self.addr[1]))
             if (ret == None):
                 alive = False
             else:

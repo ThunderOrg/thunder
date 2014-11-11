@@ -248,8 +248,11 @@ class RequestHandler(socketserver.BaseRequestHandler):
             else:
                found = False
                for group in clients.collection():
-                  for client in clients.get(group):
+                  for ip in clients.get(group):
                      print(client)
+                     print(ip)
+                     
+                     
             self.request.sendall(response.encode('UTF8'))
 
         elif (data[0] == 'CHECKINSTANCE'):
