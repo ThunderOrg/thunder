@@ -249,10 +249,10 @@ class RequestHandler(socketserver.BaseRequestHandler):
                found = False
                for group in clients.collection():
                   for ip in clients.get(group):
-                     print(client)
-                     print(ip)
-                     
-                     
+                     if (ip[0] == data[1] and str(ip[1]) == data[2]):
+                        found = True
+               if (not found):
+                  response = "SUBSCRIBE"
             self.request.sendall(response.encode('UTF8'))
 
         elif (data[0] == 'CHECKINSTANCE'):
