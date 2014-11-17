@@ -3,7 +3,7 @@
 # The University of Alabama
 # Cloud and Cluster Computer Group
 
-import auth, threading, socket, socketserver, sys, platform, struct
+import auth, threading, socket, socketserver, sys, platform, struct, traceback
 from dictionary import *
 from websocket import *
 from mysql_support import mysql
@@ -176,6 +176,7 @@ class ThunderRPC(threading.Thread):
             for addr in addresses:
                 try:
                     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    s.settimeout(10)
                     s.connect(addr)
                     s.close()
                 except:
@@ -204,10 +205,10 @@ class ThunderRPC(threading.Thread):
         MCAST_PORT = int(constants.get('default.mcastport'))
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         try:
-         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+           sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         except AttributeError:
-         print("Attribute Error")
-         pass
+           print("Attribute Error")
+           pass
 
         # bind to all adapters
         sock.bind(('0.0.0.0', MCAST_PORT))
@@ -272,7 +273,9 @@ class ThunderRPC(threading.Thread):
             # the host and its response
             return host[0]+':'+str(response)
         except Exception as e:
-            print(e)
+            #print(e)
+            #print("Host =", host)
+            #print("Data =", data)
             return None
 
     # publish data to an entire group

@@ -24,7 +24,6 @@ class RequestHandler(socketserver.BaseRequestHandler):
     def handle(self):
         self.container = self.server._ThunderRPCInstance
         self.data = self.request.recv(1024)
-        print(self.data)
         websock = websocket(self.request)
         decodedData = ''
         ws = False
