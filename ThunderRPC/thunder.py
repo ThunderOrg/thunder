@@ -3,7 +3,7 @@
 # The University of Alabama
 # Cloud and Cluster Computer Group
 
-import auth, threading, socket, socketserver, sys, platform, struct
+import auth, threading, socket, socketserver, sys, platform, struct, traceback
 from dictionary import *
 from websocket import *
 from mysql_support import mysql
@@ -176,6 +176,7 @@ class ThunderRPC(threading.Thread):
             for addr in addresses:
                 try:
                     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    s.settimeout(10)
                     s.connect(addr)
                     s.close()
                 except:
@@ -204,9 +205,10 @@ class ThunderRPC(threading.Thread):
         MCAST_PORT = int(constants.get('default.mcastport'))
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         try:
-         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+           sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         except AttributeError:
-         pass
+           print("Attribute Error")
+           pass
 
         # bind to all adapters
         sock.bind(('0.0.0.0', MCAST_PORT))
@@ -219,14 +221,15 @@ class ThunderRPC(threading.Thread):
         MCAST_PORT = int(constants.get('default.mcastport'))
         receiver = self.getMulticastingReceiver()
         while 1:
-         try:
-            data, addr = receiver.recvfrom(1024)
-            if (data.decode() == 'ROLE'):
-               # pack the role up with the client IP
-               response = self.role + "|" + addr[0]
-               receiver.sendto(response.encode('UTF8'), addr)
-         except:
-            pass
+           try:
+              data, addr = receiver.recvfrom(1024)
+              if (data.decode() == 'ROLE'):
+                 # pack the role up with the client IP
+                 response = self.role + "|" + addr[0]
+                 receiver.sendto(response.encode('UTF8'), addr)
+           except:
+              print("Multicast not received.")
+              pass
 
     # Attempt to locate a publisher (controller) on the network.
     def findPublisher(self):
@@ -251,6 +254,7 @@ class ThunderRPC(threading.Thread):
             except KeyboardInterrupt:
                 raise
             except:
+                print("Publisher not found, retrying.")
                 continue
         self.registerClient(address, self.group)
 
@@ -269,7 +273,9 @@ class ThunderRPC(threading.Thread):
             # the host and its response
             return host[0]+':'+str(response)
         except Exception as e:
-            print(e)
+            #print(e)
+            #print("Host =", host)
+            #print("Data =", data)
             return None
 
     # publish data to an entire group
@@ -336,9 +342,13 @@ class ThunderRPC(threading.Thread):
         alive = True
         while (alive):
             sleep(int(constants.get('heartbeat.interval')))
-            ret = self.publishToHost(self._publisher, 'HEARTBEAT')
+            ret = self.publishToHost(self._publisher, 'HEARTBEAT ' + str(self.addr[0]) + " " + str(self.addr[1]))
             if (ret == None):
                 alive = False
+            else:
+                data = ret.split(':')
+                if (data[1] == "SUBSCRIBE"):
+                    alive = False
         self.findPublisher()
         return
 

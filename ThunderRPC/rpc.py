@@ -24,7 +24,6 @@ class RequestHandler(socketserver.BaseRequestHandler):
     def handle(self):
         self.container = self.server._ThunderRPCInstance
         self.data = self.request.recv(1024)
-        print(self.data)
         websock = websocket(self.request)
         decodedData = ''
         ws = False
@@ -241,7 +240,19 @@ class RequestHandler(socketserver.BaseRequestHandler):
                         clients.append((data[3], c))
         # check if the caller is sending a heartbeat
         elif (data[0] == 'HEARTBEAT'):
-            self.request.sendall(data[0].encode('UTF8'))
+            # check if the client is still registered
+            response = data[0]
+            if (len(clients.collection()) == 0):
+               response = "SUBSCRIBE"
+            else:
+               found = False
+               for group in clients.collection():
+                  for ip in clients.get(group):
+                     if (ip[0] == data[1] and str(ip[1]) == data[2]):
+                        found = True
+               if (not found):
+                  response = "SUBSCRIBE"
+            self.request.sendall(response.encode('UTF8'))
 
         elif (data[0] == 'CHECKINSTANCE'):
             virtcon = libvirt.openReadOnly(None)

@@ -61,7 +61,7 @@ def copyFromNAS(imageName, directory, name, server):
    src = opener.open("smb://"+server+"/share/images/"+directory+"/"+imageName)
 
    # Save the image to the correct location
-   dest_dir = "/var/lib/libvirt/images"
+   dest_dir = "/srv/images"
 
    fname = dest_dir + "/" + name
 

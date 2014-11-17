@@ -45,16 +45,6 @@ CREATE TABLE `images` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `images`
---
-
-LOCK TABLES `images` WRITE;
-/*!40000 ALTER TABLE `images` DISABLE KEYS */;
-INSERT INTO `images` VALUES ('ubuntu','ubuntu','disk.img','config.img','qcow2','<MAC>');
-/*!40000 ALTER TABLE `images` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
 -- Table structure for table `instances`
 --
 
@@ -94,16 +84,6 @@ CREATE TABLE `nodes` (
   PRIMARY KEY (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `nodes`
---
-
-LOCK TABLES `nodes` WRITE;
-/*!40000 ALTER TABLE `nodes` DISABLE KEYS */;
-INSERT INTO `nodes` VALUES ('<MAC>','<IP>','STORAGE');
-/*!40000 ALTER TABLE `nodes` ENABLE KEYS */;
-UNLOCK TABLES;
 
 --
 -- Table structure for table `profiles`
@@ -189,6 +169,7 @@ CREATE TABLE `weights` (
 LOCK TABLES `weights` WRITE;
 /*!40000 ALTER TABLE `weights` DISABLE KEYS */;
 INSERT INTO `weights` VALUES (0.4,0.3,0.2,0.1,'balance');
+INSERT INTO `weights` VALUES (0.2,0.3,0.2,0.1,'test');
 /*!40000 ALTER TABLE `weights` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
