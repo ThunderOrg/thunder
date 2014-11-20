@@ -13,6 +13,7 @@ from uuid import uuid1
 from time import sleep
 
 def instantiate(*params):
+   print("IN INSTANTIATE")
    args = params[1]
    name = args[0]
    username = args[1]
@@ -26,7 +27,7 @@ def instantiate(*params):
    serverName = image['node']
 
    # Lookup name in database to find network location of image
-   nas = myConnector.getNASAddress(serverName)[0]
+   nas = myConnector.getNASAddress(serverName)[0].split(':')[0]
   
    domain = str(uuid1()).replace('-','')
    diskPath = domain + ".img"
@@ -37,11 +38,11 @@ def instantiate(*params):
 
    virtHelper = subprocess.Popen(['./cloneAndInstall.sh', diskPath, configPath, domain], stdout=subprocess.PIPE)
    out, err = virtHelper.communicate()
-   ip = out.decode().rstrip()
+   mac = out.decode().rstrip()
 
-   myConnector.insertInstance(domain, ip, client.name, username, name)
+   myConnector.insertInstance(domain, "0", client.name, username, name)
    myConnector.disconnect()
-   return "success"
+   return mac
 
 def destroy(*params):
    args = params[1]
@@ -58,6 +59,9 @@ def destroy(*params):
 def copyFromNAS(imageName, directory, name, server):
    # Create a temp file for the image
    opener = urllib.request.build_opener(SMBHandler) 
+   print(server)
+   print(directory)
+   print(imageName)
    src = opener.open("smb://"+server+"/share/images/"+directory+"/"+imageName)
 
    # Save the image to the correct location
