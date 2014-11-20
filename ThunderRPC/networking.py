@@ -33,7 +33,6 @@ def getMAC(node):
     mac = ""
     for i in range(2,len(hexMac),2):
        mac+=hexMac[i]+hexMac[i+1]+":"
-    print(mac[:-1])
     return mac[:-1]
 
 # parse the local IP routing table for entries
@@ -50,3 +49,22 @@ def ipRouteList():
                 if (lineArr[i].strip().lower == 'src'):
                     addresses += [lineArr[i+1]]
     return addresses
+
+def getDHCPRenewTime(mac):
+    result = None
+    fp = open("/var/lib/dhcp/dhcpd.leases", "r")
+    entries = fp.readlines()
+    for i in range(len(entries)-1, -1, -1):
+        line = entries[i]
+        if mac.replace('-', ':') in line:
+           foundTime = False
+           while (not foundTime and i > -1):
+              i -= 1
+              line = entries[i]
+              if "starts" in line:
+                  foundTime = True
+           if foundTime:
+              result = line.split()[-1]
+              break
+    fp.close()
+    return result

@@ -99,6 +99,16 @@ class ThunderRPC(threading.Thread):
             # startup a multicasting thread to respond to multicast messages
             self.mcastThread = threading.Thread(target = self.multicastThread)
             self.mcastThread.start()
+            self._IP = socket.gethostbyname(socket.gethostname()) 
+            if (self.clients.contains(self.group)): 
+               c = self.clients.get(self.group)
+               c.append((self.addr[0], int(self.addr[1])))
+            else:
+               self.clients.append((self.group, [(self.addr[0], int(self.addr[1]))]))
+            myConnector = mysql(self.addr[0], 3306)
+            myConnector.connect()
+            myConnector.insertNode(self.name, self.addr[0]+":"+str(self.addr[1]), self.group)
+            myConnector.disconnect()
 
         # start the thread
         self.start()
@@ -176,7 +186,7 @@ class ThunderRPC(threading.Thread):
             for addr in addresses:
                 try:
                     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    s.settimeout(10)
+                    s.settimeout(1)
                     s.connect(addr)
                     s.close()
                 except:
@@ -273,9 +283,7 @@ class ThunderRPC(threading.Thread):
             # the host and its response
             return host[0]+':'+str(response)
         except Exception as e:
-            #print(e)
-            #print("Host =", host)
-            #print("Data =", data)
+            print(e)
             return None
 
     # publish data to an entire group

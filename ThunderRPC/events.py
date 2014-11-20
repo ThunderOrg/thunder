@@ -41,8 +41,6 @@ def utilization(*params):
                      + fifteenMin + ":" + str(num_proc) + ":" \
                      + str(activeVCores)
 
-   print(retVal)
-   
    return retVal
 
 def sysInfo(*params):

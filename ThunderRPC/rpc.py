@@ -3,9 +3,10 @@
 # The University of Alabama
 # Cloud and Cluster Computer Group
 
-import auth, socket, socketserver, threading, libvirt, load_balancer, subprocess
+import auth, socket, socketserver, threading, libvirt, load_balancer, subprocess, shutil, fileinput, networking, threading, os
 from websocket import *
 from mysql_support import *
+from time import sleep
 
 
 # Each request should be given an independent thread, each handled by
@@ -104,7 +105,8 @@ class RequestHandler(socketserver.BaseRequestHandler):
             index = 0#load_balancer.select(load, weights)
             selectedNode = nodes[index]
             response = self.container.publishToHost(selectedNode, message)
-            self.request.sendall(websock.encode(Opcode.text, response))
+            print(response)
+            #self.request.sendall(websock.encode(Opcode.text, response))
         # for debugging purposes, lets print out the data for all other cases
         elif (data[0] == 'GETUSERINSTANCES'):
             username = data[1]
@@ -187,11 +189,40 @@ class RequestHandler(socketserver.BaseRequestHandler):
             for datum in profile:
                result += str(datum) + ";"
             self.request.sendall(websock.encode(Opcode.text, result[0:-1]))
-         
+        
+        elif (data[0] == "DEPLOY"):
+            role = data[1]
+            macs = data[2].split(";")[0:-1]
+            for mac in macs:
+               oldDHCPTime = networking.getDHCPRenewTime(mac)
+               print(oldDHCPTime)
+               shutil.copyfile("pxetemplate.cfg", "/srv/tftp/pxelinux.cfg/01-"+mac)
+               for line in fileinput.input("/srv/tftp/pxelinux.cfg/01-"+mac, inplace=True):
+                  if "<ROLE>" in line:
+                     print(line.replace("<ROLE>", role), end="")
+                  elif "<SERVER_IP>" in line:
+                     print(line.replace("<SERVER_IP>", self.container.addr[0]), end="")
+                  else:
+                     print(line, end="")
+               t = threading.Thread(target = self.detectDHCPRenew, args = (mac, oldDHCPTime, ))
+               t.start()
+            self.request.sendall(websock.encode(Opcode.text, "Deployment: SUCCESS"))
+
         else:
             print("DATA:",data)
 
         return
+
+    def detectDHCPRenew(self, mac, time):
+        changed = False
+        while (not changed):
+           newTime = networking.getDHCPRenewTime(mac)
+           if newTime != time:
+              changed = True
+              print("Detected DHCP renew of MAC:", mac)
+        sleep(120)
+        os.remove("/srv/tftp/pxelinux.cfg/01-"+mac)
+        print("Removed PXE configuration")
 
     def processTraditionalRequest(self, data):
         client = self.client_address
@@ -266,6 +297,6 @@ class RequestHandler(socketserver.BaseRequestHandler):
             virtcon.close()
 
         else:
-            print(data)
+            print("DATA:",data)
 
         return
