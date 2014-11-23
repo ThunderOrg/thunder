@@ -32,7 +32,7 @@ def getMAC(node):
     hexMac = hex(node)
     mac = ""
     for i in range(2,len(hexMac),2):
-       mac+=hexMac[i]+hexMac[i+1]+":"
+       mac+=hexMac[i]+hexMac[i+1]+"-"
     return mac[:-1]
 
 # parse the local IP routing table for entries
