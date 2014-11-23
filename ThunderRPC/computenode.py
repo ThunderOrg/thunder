@@ -42,6 +42,7 @@ def instantiate(*params):
 
    myConnector.insertInstance(domain, "-1", client.name, username, name)
    myConnector.disconnect()
+   print(mac)
    return mac
 
 def destroy(*params):

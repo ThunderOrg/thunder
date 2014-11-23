@@ -70,6 +70,7 @@ def getDHCPRenewTime(mac):
     return result
 
 def getIPFromDHCP(mac):
+   print("IN GETIP FROM DHCP:", mac)
    result = None
    fp = open("/var/lib/dhcp/dhcpd.leases", "r")
    entries = fp.readlines()
@@ -81,9 +82,11 @@ def getIPFromDHCP(mac):
              i -= 1
              line = entries[i]
              if len(line) >= 5 and line[:4] == "lease":
+                print(line)
                 foundIP = True
           if foundIP:
              result = line.split()[-1]
              break
    fp.close() 
+   print("Done with getIP")
    return result
