@@ -66,11 +66,9 @@ class mysql():
                   "','"+profile+"') on duplicate key UPDATE ip='" + ip + "', domain='" + domain + "';")
       cur.close()
 
-   def insertNode(self, name, address, tpe):
+   def updateInstanceIP(self, domain, ip):
       cur = self.conn.cursor()
-      res = cur.execute("INSERT INTO nodes VALUES ('" + name + "','" + address +         \
-		  "','" + tpe + "') on duplicate key UPDATE address='" +          \
-	          address + "';")
+      cur.execute("UPDATE instances SET ip='" + ip + "' WHERE domain='" + domain +"';") 
       cur.close()
 
    def insertNode(self, name, address, tpe):
