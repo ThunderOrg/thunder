@@ -108,7 +108,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
             ip = networking.getIPFromDHCP(response[1])
             myConnector.updateInstanceIP(response[2], ip)
             myConnector.disconnect()
-            self.request.sendall(websock.encode(Opcode.text, response))
+            self.request.sendall(websock.encode(Opcode.text, ip))
         # for debugging purposes, lets print out the data for all other cases
         elif (data[0] == 'GETUSERINSTANCES'):
             username = data[1]

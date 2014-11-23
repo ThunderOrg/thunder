@@ -1,4 +1,5 @@
 import subprocess
+from time import sleep
 
 # get the IP of the desired networking interface
 def getIP(interface):
@@ -54,6 +55,7 @@ def getDHCPRenewTime(mac):
     result = None
     fp = open("/var/lib/dhcp/dhcpd.leases", "r")
     entries = fp.readlines()
+    fp.close()
     for i in range(len(entries)-1, -1, -1):
         line = entries[i]
         if mac.replace('-', ':') in line:
@@ -66,27 +68,27 @@ def getDHCPRenewTime(mac):
            if foundTime:
               result = line.split()[-1]
               break
-    fp.close()
     return result
 
 def getIPFromDHCP(mac):
-   print("IN GETIP FROM DHCP:", mac)
    result = None
-   fp = open("/var/lib/dhcp/dhcpd.leases", "r")
-   entries = fp.readlines()
-   for i in range(len(entries)-1, -1, -1):
-       line = entries[i]
-       if mac.replace('-', ':') in line:
-          foundIP = False
-          while (not foundIP and i > -1):
-             i -= 1
-             line = entries[i]
-             if len(line) >= 5 and line[:4] == "lease":
-                print(line)
-                foundIP = True
-          if foundIP:
-             result = line.split()[-1]
-             break
-   fp.close() 
-   print("Done with getIP")
+   done = False
+   while (not done):
+      fp = open("/var/lib/dhcp/dhcpd.leases", "r")
+      entries = fp.readlines()
+      fp.close() 
+      for i in range(len(entries)-1, -1, -1):
+         line = entries[i]
+         if mac.replace('-', ':') in line:
+            foundIP = False
+            while (not foundIP and i > -1):
+               i -= 1
+               line = entries[i]
+               if "lease" in line:
+                  foundIP = True
+            if foundIP:
+               result = line.split()[1]
+               done = True
+               break
+      sleep(10)
    return result
