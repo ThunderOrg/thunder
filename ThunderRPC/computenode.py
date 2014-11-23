@@ -38,9 +38,9 @@ def instantiate(*params):
 
    virtHelper = subprocess.Popen(['./cloneAndInstall.sh', diskPath, configPath, domain], stdout=subprocess.PIPE)
    out, err = virtHelper.communicate()
-   mac = out.decode().rstrip()
+   mac = out.decode().rstrip().replace(':','-')
 
-   myConnector.insertInstance(domain, "0", client.name, username, name)
+   myConnector.insertInstance(domain, "-1", client.name, username, name)
    myConnector.disconnect()
    return mac
 
