@@ -105,6 +105,8 @@ class RequestHandler(socketserver.BaseRequestHandler):
             index = 0#load_balancer.select(load, weights)
             selectedNode = nodes[index]
             response = self.container.publishToHost(selectedNode, message)
+            ip = networking.getIPFromDHCP(response[1]) 
+            print(ip)
             print(response)
             #self.request.sendall(websock.encode(Opcode.text, response))
         # for debugging purposes, lets print out the data for all other cases
