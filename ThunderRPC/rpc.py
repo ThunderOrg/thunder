@@ -71,8 +71,8 @@ class RequestHandler(socketserver.BaseRequestHandler):
 
         # check if the client is requesting a list of clusters available
         elif (data[0] == 'GROUPNAMES'):
-            self.request.sendall(websock.encode(Opcode.text,                   \
-                                              self.container.getClusterList()))
+            self.request.sendall(websock.encode(Opcode.text,                                \
+                                 self.container.getClusterList()))
 
         # check if the client is requesting a list of nodes in a particular
         # cluster
@@ -94,21 +94,32 @@ class RequestHandler(socketserver.BaseRequestHandler):
 
         elif (data[0] == 'INSTANTIATE'):
             nodes = clients.get("COMPUTE")
+            # Message style:
+            # INSTANTIATE <VM_NAME> <USER_NAME>
             message = data[0] + ' ' + data[1] + ' ' + data[2]
-            print(message)
+            # [memTotal, memFree, 1min, 5min, 15min, maxVCore, activeVCore]
             load = [self.container.publishToHost(nodes[0], "UTILIZATION")]
             for node in nodes[1:]:
                load += [self.container.publishToHost(node, "UTILIZATION")]
             myConnector = mysql(self.container.addr[0], 3306)
             myConnector.connect()
             weights = myConnector.getWeights("balance")
-            index = 0#load_balancer.select(load, weights)
+            vm = myConnector.getProfileData(data[1])
+            selected = load_balancer.select(load, weights, vm)
+            if (selected == None):
+               # Couldn't find a node to instantiate the vm
+               return
+            index = -1
+            for i in range(0, len(nodes), 1):
+               if (nodes[i][0] == selected):
+                  index = i
             selectedNode = nodes[index]
             response = self.container.publishToHost(selectedNode, message).split(':')
             ip = networking.getIPFromDHCP(response[1])
             myConnector.updateInstanceIP(response[2], ip)
             myConnector.disconnect()
             self.request.sendall(websock.encode(Opcode.text, ip))
+
         # for debugging purposes, lets print out the data for all other cases
         elif (data[0] == 'GETUSERINSTANCES'):
             username = data[1]
