@@ -93,6 +93,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
             self.request.sendall(websock.encode(Opcode.text, result[:-1]))
 
         elif (data[0] == 'INSTANTIATE'):
+            self.container.cleanupClients()
             nodes = clients.get("COMPUTE")
             # Message style:
             # INSTANTIATE <VM_NAME> <USER_NAME>
@@ -105,6 +106,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
             myConnector.connect()
             weights = myConnector.getWeights("balance")
             vm = myConnector.getProfileData(data[1])
+            myConnector.disconnect()
             selected = load_balancer.select(load, weights, vm)
             if (selected == None):
                # Couldn't find a node to instantiate the vm
@@ -116,6 +118,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
             selectedNode = nodes[index]
             response = self.container.publishToHost(selectedNode, message).split(':')
             ip = networking.getIPFromDHCP(response[1])
+            myConnector.connect()
             myConnector.updateInstanceIP(response[2], ip)
             myConnector.disconnect()
             self.request.sendall(websock.encode(Opcode.text, ip))
