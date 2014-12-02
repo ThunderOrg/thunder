@@ -28,8 +28,10 @@ def instantiate(*params):
 
    # Lookup name in database to find network location of image
    nas = myConnector.getNASAddress(serverName)[0].split(':')[0]
-  
    domain = str(uuid1()).replace('-','')
+   myConnector.insertInstance(domain, "-1", client.name, username, name)
+   myConnector.disconnect()
+
    diskPath = domain + ".img"
    configPath = domain + ".config"
 
@@ -39,9 +41,6 @@ def instantiate(*params):
    virtHelper = subprocess.Popen(['./cloneAndInstall.sh', diskPath, configPath, domain], stdout=subprocess.PIPE)
    out, err = virtHelper.communicate()
    mac = out.decode().rstrip().replace(':','-')
-
-   myConnector.insertInstance(domain, "-1", client.name, username, name)
-   myConnector.disconnect()
    return mac + ':' + domain
 
 def destroy(*params):

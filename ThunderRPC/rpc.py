@@ -154,6 +154,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
                   result = 'success'
                   break
             myConnector.disconnect()
+            print(result)
             self.request.sendall(websock.encode(Opcode.text, result))
 
         elif (data[0] == "RAINCONSTANTS"):
