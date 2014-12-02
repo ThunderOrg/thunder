@@ -42,6 +42,7 @@ def instantiate(*params):
    out, err = virtHelper.communicate()
    mac = out.decode().rstrip().replace(':','-')
    return mac + ':' + domain
+   return 0
 
 def destroy(*params):
    args = params[1]

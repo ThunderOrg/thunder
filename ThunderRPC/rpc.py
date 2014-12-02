@@ -135,7 +135,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
                nodeAddr = (nodeAddr[0],int(nodeAddr[1]))
                message = "CHECKINSTANCE " + instance[0]
                response = self.container.publishToHost(nodeAddr, message) 
-               if (response.split(':')[1] == "error"):
+               if (response.split(':')[1] == "error" and instance[1] != '-1'):
                   myConnector.deleteInstance(instance[0])
             instances = myConnector.getUserInstances(username)
             myConnector.disconnect()
