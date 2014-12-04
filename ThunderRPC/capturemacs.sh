@@ -1,6 +1,6 @@
 #!/bin/bash
 
-nmap -PR -sP 10.10.0.0/16 > /dev/null 2>&1
+nmap -PR -sP 10.10.0.0/24 > /dev/null 2>&1
 
 awk ' { out = ""} \
       { $1=="lease"||$1=="client-hostname" ? out=" " $2: out=out } \
