@@ -271,7 +271,7 @@ class ThunderRPC(threading.Thread):
 
     # send a message to another machine running the ThunderRPC service
     def publishToHost(self, host, data):
-        retryLimit = constants.get("default.maxConnectionRetries")
+        retryLimit = int(constants.get("default.maxConnectionRetries"))
         count = 0;
         while (count < retryLimit):
             try:
