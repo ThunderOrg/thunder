@@ -4,6 +4,7 @@
 # Cloud and Cluster Computer Group
 
 import pymysql
+from time import sleep
 
 class mysql():
    def __init__(self, server, port):
@@ -11,8 +12,15 @@ class mysql():
       self.port = port
 
    def connect(self):
-      self.conn = pymysql.connect(user='thunder', passwd='thunder', db='thunder', \
-                                  host=self.server, port=self.port)
+      while (1):
+          try:
+              self.conn = pymysql.connect(user='thunder', passwd='thunder', db='thunder', \
+                                      host=self.server, port=self.port)
+              break
+          except:
+              print("Couldn't connect to the database. Trying again!")
+              sleep(1)
+              continue
 
    def disconnect(self):
       self.conn.commit()

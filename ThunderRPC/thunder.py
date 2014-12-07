@@ -105,10 +105,10 @@ class ThunderRPC(threading.Thread):
                c.append((self.addr[0], int(self.addr[1])))
             else:
                self.clients.append((self.group, [(self.addr[0], int(self.addr[1]))]))
-            myConnector = mysql(self.addr[0], 3306)
-            myConnector.connect()
-            myConnector.insertNode(self.name, self.addr[0]+":"+str(self.addr[1]), self.group)
-            myConnector.disconnect()
+               myConnector = mysql(self.addr[0], 3306)
+               myConnector.connect()
+               myConnector.insertNode(self.name, self.addr[0]+":"+str(self.addr[1]), self.group)
+               myConnector.disconnect()
 
         # start the thread
         self.start()

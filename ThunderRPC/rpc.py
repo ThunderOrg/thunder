@@ -312,6 +312,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
                virtcon.lookupByName(data[1])
                self.request.sendall('success'.encode('UTF8'))
             except:
+               print("Exception happened in checkinstance")
                self.request.sendall('error'.encode('UTF8'))
             virtcon.close()
 
