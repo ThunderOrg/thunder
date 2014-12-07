@@ -213,8 +213,9 @@ class RequestHandler(socketserver.BaseRequestHandler):
             for mac in macs:
                oldDHCPTime = networking.getDHCPRenewTime(mac)
                print(oldDHCPTime)
-               shutil.copyfile("pxetemplate.cfg", "/srv/tftp/pxelinux.cfg/01-"+mac)
-               for line in fileinput.input("/srv/tftp/pxelinux.cfg/01-"+mac, inplace=True):
+               tftpDir = constants.get("default.tftpdir")
+               shutil.copyfile("pxetemplate.cfg", tftpDir + "/pxelinux.cfg/01-" + mac)
+               for line in fileinput.input(tftpDir + "/pxelinux.cfg/01-" + mac, inplace=True):
                   if "<ROLE>" in line:
                      print(line.replace("<ROLE>", role), end="")
                   elif "<SERVER_IP>" in line:
@@ -238,7 +239,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
               changed = True
               print("Detected DHCP renew of MAC:", mac)
         sleep(120)
-        os.remove("/srv/tftp/pxelinux.cfg/01-"+mac)
+        os.remove(constants.get("default.tftpdir") + "/pxelinux.cfg/01-" + mac)
         print("Removed PXE configuration")
 
     def processTraditionalRequest(self, data):
@@ -269,6 +270,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
         # check if the caller is requesting a nonce for authorization
         elif (data[0] == 'AUTH'):
             nonce = auth.generateNonce()
+            print(nonce)
             self.container._nonce = nonce
             self.request.sendall(nonce.encode('UTF8'))
 

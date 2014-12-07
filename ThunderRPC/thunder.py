@@ -186,7 +186,7 @@ class ThunderRPC(threading.Thread):
             for addr in addresses:
                 try:
                     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    s.settimeout(1)
+                    s.settimeout(5)
                     s.connect(addr)
                     s.close()
                 except:
@@ -233,6 +233,7 @@ class ThunderRPC(threading.Thread):
         while 1:
            try:
               data, addr = receiver.recvfrom(1024)
+              print("Received", data, "from", addr)
               if (data.decode() == 'ROLE'):
                  # pack the role up with the client IP
                  response = self.role + "|" + addr[0]
@@ -270,21 +271,26 @@ class ThunderRPC(threading.Thread):
 
     # send a message to another machine running the ThunderRPC service
     def publishToHost(self, host, data):
-        try:
-            # open a socket connection
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect(host)
-            # encode the data before sending
-            s.send(data.encode('UTF8'))
-            # wait for a response from the host
-            response = s.recv(1024).decode()
-            s.close()
-            # return a colon delimited string containing the IP address of
-            # the host and its response
-            return host[0]+':'+str(response)
-        except Exception as e:
-            print(e)
-            return None
+        retryLimit = int(constants.get("default.maxConnectionRetries"))
+        count = 0;
+        while (count < retryLimit):
+            try:
+                # open a socket connection
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.settimeout(5)
+                s.connect(host)
+                # encode the data before sending
+                s.send(data.encode('UTF8'))
+                # wait for a response from the host
+                response = s.recv(1024).decode()
+                s.close()
+                # return a colon delimited string containing the IP address of
+                # the host and its response
+                return host[0]+':'+str(response)
+            except Exception as e:
+                print(e)
+            count += 1
+        return None
 
     # publish data to an entire group
     def publishToGroup(self, group, data):
@@ -311,7 +317,9 @@ class ThunderRPC(threading.Thread):
         # send an authorization request to the server.  The server should
         # return a nonce value.
         nonce = self.publishToHost(host, 'AUTH')
-
+ 
+        print(nonce)
+ 
         # encrypt the nonce with pre-shared key and send it back to the host.
         decVal = auth.encrypt(nonce).decode('UTF8')
 

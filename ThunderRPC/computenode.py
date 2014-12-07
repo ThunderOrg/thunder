@@ -13,7 +13,6 @@ from uuid import uuid1
 from time import sleep
 
 def instantiate(*params):
-   print("IN INSTANTIATE")
    args = params[1]
    name = args[0]
    username = args[1]
@@ -42,7 +41,6 @@ def instantiate(*params):
    out, err = virtHelper.communicate()
    mac = out.decode().rstrip().replace(':','-')
    return mac + ':' + domain
-   return 0
 
 def destroy(*params):
    args = params[1]
@@ -65,7 +63,7 @@ def copyFromNAS(imageName, directory, name, server):
    src = opener.open("smb://"+server+"/share/images/"+directory+"/"+imageName)
 
    # Save the image to the correct location
-   dest_dir = "/srv/images"
+   dest_dir = constants.get("default.imagedir")
 
    fname = dest_dir + "/" + name
 
