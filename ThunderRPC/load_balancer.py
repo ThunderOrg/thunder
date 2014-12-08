@@ -1,6 +1,4 @@
-from config import *
-
-VCORES_PERCORE = int(constants.get('default.vcoresPerCore'))
+VCORES_PERCORE = constants.get('default.vcoresPerCore')
 
 def select(nodes, weights, vm):
    rankings = getRankings(nodes, weights)

@@ -1,7 +1,6 @@
 import os
 import platform
 import libvirt
-from config import *
 
 def utilization(*params):
    # extract the tag and data
@@ -28,7 +27,7 @@ def utilization(*params):
       if (line[:9] == "processor"):
          num_proc += 1
 
-   num_proc *= int(constants.get('default.vcoresPerCore'))
+   num_proc *= constants.get('default.vcoresPerCore')
 
    activeVCores = 0
 

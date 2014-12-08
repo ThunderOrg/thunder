@@ -19,7 +19,7 @@ socketserver.TCPServer.allow_reuse_address = True
 parseConfig('thunder.conf')
 
 # default port of the server
-SERVER_PORT = int(constants.get('server.port'))
+SERVER_PORT = constants.get('server.port')
 
 class ThunderRPC(threading.Thread):
     # local imports
@@ -38,7 +38,7 @@ class ThunderRPC(threading.Thread):
             port = SERVER_PORT
         elif (role == 'SUBSCRIBER'):
             interface = constants.get('default.interface')
-            port = int(constants.get('default.port'))
+            port = constants.get('default.port')
         else:
             print("Invalid role identifer.  Must be either" +                  \
                   "'PUBLISHER' or 'SUBSCRIBER'")
@@ -212,7 +212,7 @@ class ThunderRPC(threading.Thread):
     # get a bound socket for receiving multicast messages
     def getMulticastingReceiver(self):
         MCAST_GRP = constants.get('default.mcastgrp')
-        MCAST_PORT = int(constants.get('default.mcastport'))
+        MCAST_PORT = constants.get('default.mcastport')
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         try:
            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -228,7 +228,7 @@ class ThunderRPC(threading.Thread):
 
     def multicastThread(self):
         MCAST_GRP = constants.get('default.mcastgrp')
-        MCAST_PORT = int(constants.get('default.mcastport'))
+        MCAST_PORT = constants.get('default.mcastport')
         receiver = self.getMulticastingReceiver()
         while 1:
            try:
@@ -245,9 +245,9 @@ class ThunderRPC(threading.Thread):
     # Attempt to locate a publisher (controller) on the network.
     def findPublisher(self):
         MCAST_GRP = constants.get('default.mcastgrp')
-        MCAST_PORT = int(constants.get('default.mcastport'))
+        MCAST_PORT = constants.get('default.mcastport')
         sender = self.getMulticastingSender()
-        sender.settimeout(int(constants.get('multicast.timeout')))
+        sender.settimeout(constants.get('multicast.timeout'))
         found = False
         address = None
         while(not found):
@@ -271,7 +271,7 @@ class ThunderRPC(threading.Thread):
 
     # send a message to another machine running the ThunderRPC service
     def publishToHost(self, host, data):
-        retryLimit = int(constants.get("default.maxConnectionRetries"))
+        retryLimit = constants.get("default.maxConnectionRetries")
         count = 0;
         while (count < retryLimit):
             try:
@@ -357,7 +357,7 @@ class ThunderRPC(threading.Thread):
 
         alive = True
         while (alive):
-            sleep(int(constants.get('heartbeat.interval')))
+            sleep(constants.get('heartbeat.interval'))
             ret = self.publishToHost(self._publisher, 'HEARTBEAT ' + str(self.addr[0]) + " " + str(self.addr[1]))
             if (ret == None):
                 alive = False

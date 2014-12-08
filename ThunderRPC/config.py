@@ -4,8 +4,10 @@
 # Cloud and Cluster Computing Group
 
 from dictionary import *
+import sys
+import builtins
 
-constants = Dictionary()
+builtins.constants = Dictionary()
 
 def parseConfig(fname):
     fp = open(fname, 'r')
@@ -25,5 +27,13 @@ def parseConfig(fname):
                     cIndex = i
                     break
             val = val[:cIndex].strip()
+            if (val[0] == '"' and val[-1] == '"'):
+                val = val[1:-1]
+            else:
+                try:
+                   val = int(val)
+                except:
+                   print("Could not parse config on line:\n\t" + line)
+                   sys.exit(-1)
             constants.append([key,val])
     fp.close()
