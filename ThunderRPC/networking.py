@@ -74,7 +74,7 @@ def getIPFromDHCP(mac):
    result = None
    done = False
    while (not done):
-      fp = open(constants.get(“default.dhcpdLeases”), "r")
+      fp = open(constants.get("default.dhcpdLeases"), "r")
       entries = fp.readlines()
       fp.close() 
       for i in range(len(entries)-1, -1, -1):
