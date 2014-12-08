@@ -270,14 +270,17 @@ class ThunderRPC(threading.Thread):
         self.registerClient(address, self.group)
 
     # send a message to another machine running the ThunderRPC service
-    def publishToHost(self, host, data):
+    def publishToHost(self, host, data, timeout = True):
         retryLimit = constants.get("default.maxConnectionRetries")
         count = 0;
         while (count < retryLimit):
             try:
                 # open a socket connection
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                s.settimeout(5)
+                if (timeout):
+                    s.settimeout(constants.get("default.messageTimeout"))
+                else:
+                    s.settimeout(None)
                 s.connect(host)
                 # encode the data before sending
                 s.send(data.encode('UTF8'))

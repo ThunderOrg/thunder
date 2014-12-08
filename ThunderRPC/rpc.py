@@ -116,7 +116,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
                if (nodes[i][0] == selected):
                   index = i
             selectedNode = nodes[index]
-            response = self.container.publishToHost(selectedNode, message).split(':')
+            response = self.container.publishToHost(selectedNode, message, False).split(':')
             ip = networking.getIPFromDHCP(response[1])
             myConnector.connect()
             myConnector.updateInstanceIP(response[2], ip)
