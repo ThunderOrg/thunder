@@ -109,6 +109,8 @@ class ThunderRPC(threading.Thread):
                myConnector.connect()
                myConnector.insertNode(self.name, self.addr[0]+":"+str(self.addr[1]), self.group)
                myConnector.disconnect()
+            # recreate preseeding files from template
+            self.networking.generatePreseed(self._IP)
 
         # start the thread
         self.start()

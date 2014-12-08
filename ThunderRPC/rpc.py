@@ -212,7 +212,6 @@ class RequestHandler(socketserver.BaseRequestHandler):
             macs = data[2].split(";")[0:-1]
             for mac in macs:
                oldDHCPTime = networking.getDHCPRenewTime(mac)
-               print(oldDHCPTime)
                tftpDir = constants.get("default.tftpdir")
                shutil.copyfile("pxetemplate.cfg", tftpDir + "/pxelinux.cfg/01-" + mac)
                for line in fileinput.input(tftpDir + "/pxelinux.cfg/01-" + mac, inplace=True):

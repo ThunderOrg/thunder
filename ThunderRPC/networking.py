@@ -1,4 +1,6 @@
 import subprocess
+import shutil
+import fileinput
 from time import sleep
 
 # get the IP of the desired networking interface
@@ -92,3 +94,17 @@ def getIPFromDHCP(mac):
                break
       sleep(10)
    return result
+
+def generatePreseed(ip):
+   wwwDir = constants.get("default.wwwdir")
+   template = wwwDir  + "/preseed_template.cfg"
+   shutil.copyfile(template, wwwDir + "/preseed_compute.cfg")
+   shutil.copyfile(template, wwwDir + "/preseed_storage.cfg")
+   shutil.copyfile(template, wwwDir + "/preseed_controller.cfg")
+   configs = ["compute", "storage", "controller"]
+   for config in configs:
+      for line in fileinput.input(wwwDir + "/preseed_" + config + ".cfg", inplace=True):
+         if "<ROLE>" in line or "<SERVER_IP>" in line:
+            print(line.replace("<ROLE>", config).replace("<SERVER_IP>", ip), end="")
+         else:
+            print(line, end="")
