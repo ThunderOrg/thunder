@@ -287,8 +287,8 @@ class ThunderRPC(threading.Thread):
                 # return a colon delimited string containing the IP address of
                 # the host and its response
                 return host[0]+':'+str(response)
-            except Exception as e:
-                print(e)
+            except:
+                print("Host", host[0] + ":" + str(host[1]), "didn't respond.  Trying again.")
             count += 1
         return host[0] + ":timeout"
 
