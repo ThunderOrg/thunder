@@ -1,5 +1,5 @@
 #!/bin/bash
-WWW_ROOT=/var/www
+WWW_ROOT=/var/www/html
 WD=$(pwd)/web
 DATE=`date +%Y-%m-%d`
 FNAME=$DATE
