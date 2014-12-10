@@ -98,10 +98,12 @@ def getIPFromDHCP(mac):
 def generatePreseed(ip):
    wwwDir = constants.get("default.wwwdir")
    template = wwwDir  + "/preseed_template.cfg"
+   template_bare = wwwDir  + "/preseed_bare_template.cfg"
    shutil.copyfile(template, wwwDir + "/preseed_compute.cfg")
    shutil.copyfile(template, wwwDir + "/preseed_storage.cfg")
    shutil.copyfile(template, wwwDir + "/preseed_controller.cfg")
-   configs = ["compute", "storage", "controller"]
+   shutil.copyfile(template_bare, wwwDir + "/preseed_bare.cfg")
+   configs = ["compute", "storage", "controller", "bare"]
    for config in configs:
       for line in fileinput.input(wwwDir + "/preseed_" + config + ".cfg", inplace=True):
          if "<ROLE>" in line or "<SERVER_IP>" in line:
