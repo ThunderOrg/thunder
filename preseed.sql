@@ -1,8 +1,8 @@
--- MySQL dump 10.13  Distrib 5.5.38, for debian-linux-gnu (x86_64)
+-- MySQL dump 10.13  Distrib 5.5.40, for debian-linux-gnu (x86_64)
 --
 -- Host: localhost    Database: thunder
 -- ------------------------------------------------------
--- Server version	5.5.38-0ubuntu0.14.04.1
+-- Server version	5.5.40-0ubuntu0.14.04.1
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -45,6 +45,15 @@ CREATE TABLE `images` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Dumping data for table `images`
+--
+
+LOCK TABLES `images` WRITE;
+/*!40000 ALTER TABLE `images` DISABLE KEYS */;
+/*!40000 ALTER TABLE `images` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `instances`
 --
 
@@ -57,7 +66,11 @@ CREATE TABLE `instances` (
   `node` varchar(200) NOT NULL,
   `owner` varchar(200) NOT NULL,
   `profile` varchar(200) NOT NULL,
-  PRIMARY KEY (`owner`)
+  PRIMARY KEY (`domain`,`owner`),
+  UNIQUE KEY `domain_2` (`domain`),
+  KEY `ip` (`ip`),
+  KEY `domain` (`domain`),
+  KEY `ip_2` (`ip`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -86,6 +99,15 @@ CREATE TABLE `nodes` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Dumping data for table `nodes`
+--
+
+LOCK TABLES `nodes` WRITE;
+/*!40000 ALTER TABLE `nodes` DISABLE KEYS */;
+/*!40000 ALTER TABLE `nodes` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `profiles`
 --
 
@@ -110,7 +132,6 @@ CREATE TABLE `profiles` (
 
 LOCK TABLES `profiles` WRITE;
 /*!40000 ALTER TABLE `profiles` DISABLE KEYS */;
-INSERT INTO `profiles` VALUES ('dev','ubuntu','Testing','Using this image as testing for Thunder VM instantiation.','vim',1024,1);
 /*!40000 ALTER TABLE `profiles` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -138,7 +159,6 @@ CREATE TABLE `user` (
 
 LOCK TABLES `user` WRITE;
 /*!40000 ALTER TABLE `user` DISABLE KEYS */;
-INSERT INTO `user` VALUES ('Default','Admin','SUPERUSER','49eff747f7b66f70133bfe00aa8ac2d6b0fbee5be80e52537b0163f147d20418','admin',1),('Test','Test','REGULAR','9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08','test',1);
 /*!40000 ALTER TABLE `user` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -150,15 +170,16 @@ DROP TABLE IF EXISTS `weights`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `weights` (
-  `cpu` float NOT NULL,
-  `memory` float NOT NULL,
-  `instances` float NOT NULL,
-  `latency` float NOT NULL,
+  `ram` float NOT NULL,
+  `load1` float NOT NULL,
+  `load5` float NOT NULL,
+  `load15` float NOT NULL,
+  `activevms` float NOT NULL,
   `id` varchar(64) NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `cpu` (`cpu`),
-  KEY `cpu_2` (`cpu`),
-  KEY `cpu_3` (`cpu`)
+  UNIQUE KEY `cpu` (`ram`),
+  KEY `cpu_2` (`ram`),
+  KEY `cpu_3` (`ram`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -168,8 +189,7 @@ CREATE TABLE `weights` (
 
 LOCK TABLES `weights` WRITE;
 /*!40000 ALTER TABLE `weights` DISABLE KEYS */;
-INSERT INTO `weights` VALUES (0.4,0.3,0.2,0.1,'balance');
-INSERT INTO `weights` VALUES (0.2,0.3,0.2,0.1,'test');
+INSERT INTO `weights` VALUES (40,30,10,10,10,'balance');
 /*!40000 ALTER TABLE `weights` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -182,4 +202,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2014-09-08 11:31:05
+-- Dump completed on 2014-12-09 18:45:46
