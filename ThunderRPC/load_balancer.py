@@ -2,8 +2,8 @@ VCORES_PERCORE = constants.get('default.vcoresPerCore')
 
 def select(nodes, weights, vm):
    rankings = getRankings(nodes, weights)
-   rankings.sort(key=lambda tup: tup[1])
-   for rank in rankings:
+   sortedRankings = sorted(rankings, key=lambda rank: rank[1])
+   for rank in sortedRankings:
       if (fits(rank[0], vm)):
          return rank[0]
    return None
@@ -12,7 +12,7 @@ def getRankings(nodes, weights):
    vec = []
    for node in reversed(nodes):
       nodeArr = node.split(':')
-      vec += [[nodeArr, rank(nodeArr[1:], weights)]]
+      vec.append((nodeArr, rank(nodeArr[1:], weights)))
    return vec
       
 def rank(node, weights):

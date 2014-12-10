@@ -113,7 +113,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
                return
             index = -1
             for i in range(0, len(nodes), 1):
-               if (nodes[i][0] == selected):
+               if (nodes[i][0] == selected[0]):
                   index = i
             selectedNode = nodes[index]
             response = self.container.publishToHost(selectedNode, message, False).split(':')
