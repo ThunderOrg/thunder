@@ -7,5 +7,11 @@
 
 from thunder import *
 
+def importImage(*params):
+   args = params[1]
+   print(args)
+   return 'success'
+
 client = ThunderRPC(group = 'STORAGE')
+client.registerEvent("IMPORTIMAGE", importImage)
 client.findPublisher()

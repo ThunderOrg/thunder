@@ -3,7 +3,7 @@
 # The University of Alabama
 # Cloud and Cluster Computer Group
 
-import auth, socket, socketserver, threading, libvirt, load_balancer, subprocess, shutil, fileinput, networking, threading, os
+import auth, socket, socketserver, threading, libvirt, load_balancer, subprocess, shutil, fileinput, networking, threading, os, urllib.request
 from websocket import *
 from mysql_support import *
 from time import sleep
@@ -89,7 +89,8 @@ class RequestHandler(socketserver.BaseRequestHandler):
             macs = out.decode().rstrip().split('\n')
             result = ""
             for mac in macs:
-                result+=mac.strip() + ";"
+                if (not mac.startswith(constants.get("default.vmMACPrefix"))):
+                    result+=mac.strip() + ";"
             self.request.sendall(websock.encode(Opcode.text, result[:-1]))
 
         elif (data[0] == 'INSTANTIATE'):
@@ -140,6 +141,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
             instances = myConnector.getUserInstances(username)
             myConnector.disconnect()
             self.request.sendall(websock.encode(Opcode.text, username+":"+instances))
+
         elif (data[0] == 'DESTROYINSTANCE'):
             username = data[1]
             domain = data[2]
@@ -178,29 +180,45 @@ class RequestHandler(socketserver.BaseRequestHandler):
             self.request.sendall(websock.encode(Opcode.text, "RAIN Constants Update: SUCCESS"))
 
         elif (data[0] == "IMAGELIST"):
+            print("Image List")
             myConnector = mysql(self.container.addr[0], 3306)
             myConnector.connect()
-            images = myConnector.getImages();
+            images = myConnector.getImages()
             myConnector.disconnect()
             result = ""
             for image in images:
                result += image[0] + ";"
             self.request.sendall(websock.encode(Opcode.text, result[0:-1]))
 
-        elif (data[0] == "PACKAGELIST"):
+        elif (data[0] == "SAVEPROFILE"):
+            name = data[1]
+            title = data[2]
+            desc = data[3]
+            ram = data[4]
+            vcpu = data[5]
+            image = data[6]
             myConnector = mysql(self.container.addr[0], 3306)
             myConnector.connect()
-            images = myConnector.getImages();
+            myConnector.insertProfile(name, title, desc, ram, vcpu, image)
             myConnector.disconnect()
-            result = ""
-            for image in images:
-               result += image[0] + ";"
-            self.request.sendall(websock.encode(Opcode.text, result[0:-1]))
+
+        elif (data[0] == "IMPORTIMAGE"):
+            url = data[1]
+            myConnector = mysql(self.container.addr[0], 3306)
+            myConnector.connect()
+            storageNodes = myConnector.getStorageNodes()
+            myConnector.disconnect()
+            # Figure out what to do with multiple storage nodes
+            nodeAddr = storageNodes[0][1].split(":")
+            nodeAddr = (nodeAddr[0],int(nodeAddr[1]))
+            message = "IMPORTIMAGE " + url
+            res = self.container.publishToHost(nodeAddr, message)
+            print(res)
 
         elif (data[0] == "PROFILEINFO"):
             myConnector = mysql(self.container.addr[0], 3306)
             myConnector.connect()
-            profile = myConnector.getProfile(data[1]);
+            profile = myConnector.getProfile(data[1])
             myConnector.disconnect()
             result = ""
             for datum in profile:

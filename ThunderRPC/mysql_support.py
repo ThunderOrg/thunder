@@ -137,3 +137,15 @@ class mysql():
       res = cur.fetchone()
       cur.close()
       return res
+
+   def insertProfile(self, name, title, desc, ram, vcpu, image):
+      cur = self.conn.cursor()
+      cur.execute("INSERT INTO profiles (name,title,description,ram,vcpus,image) VALUES ('" + name + "','" + title + "','" + desc + "','" + ram + "','" + vcpu + "','" + image + "');")
+      cur.close()
+
+   def getStorageNodes(self):
+      cur = self.conn.cursor()
+      cur.execute("SELECT * FROM nodes WHERE type='STORAGE';")
+      res = cur.fetchall()
+      cur.close()
+      return res

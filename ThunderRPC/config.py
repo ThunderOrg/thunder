@@ -16,7 +16,7 @@ def parseConfig(fname):
         # remove any leading or ending spaces
         line = line.strip()
         if (line != "" and line[0] != '#'):
-            keyval = line.split(":")
+            keyval = line.split("&")
             key = keyval[0].strip()
             val = keyval[1].strip()
             cIndex = len(val)
