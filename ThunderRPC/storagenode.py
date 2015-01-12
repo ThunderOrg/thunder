@@ -8,8 +8,11 @@
 from thunder import *
 
 def importImage(*params):
-   args = params[1]
-   print(args)
+   url = params[1]
+   # Download the image from the url
+   # Untar the image
+   # Put the data from the YAML into the database
+   # Store the image tar in the share
    return 'success'
 
 client = ThunderRPC(group = 'STORAGE')
