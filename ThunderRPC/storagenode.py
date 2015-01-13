@@ -12,7 +12,7 @@ def importImage(*params):
    args = params[1]
    url = args[0]
    # Download the image from the url
-   p = subprocess.Popen('wget -U dummy ' + url, shell=True) 
+   p = subprocess.Popen('wget -U firefox ' + url, shell=True) 
    print(p.wait())
    # Untar the image
    # Put the data from the YAML into the database
