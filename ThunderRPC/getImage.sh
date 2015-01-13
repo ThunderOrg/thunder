@@ -29,7 +29,7 @@ cd tmp
 wget -Ufirefox $URL -O image.tar
 tar xvf image.tar
 rm image.tar
-for f in *.tar.@(xz|gz); do
+for f in `*.tar.@(xz|gz)`; do
    mv $f $IMAGEDIR
 done
 } > /dev/null 2>&1
