@@ -212,7 +212,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
             nodeAddr = storageNodes[0][1].split(":")
             nodeAddr = (nodeAddr[0],int(nodeAddr[1]))
             message = "IMPORTIMAGE " + url
-            res = self.container.publishToHost(nodeAddr, message)
+            res = self.container.publishToHost(nodeAddr, message, False)
             print(res)
 
         elif (data[0] == "PROFILEINFO"):
