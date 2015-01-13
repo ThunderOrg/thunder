@@ -13,7 +13,7 @@ def importImage(*params):
    url = args[0]
    imageDir = constants.get("default.imagedir")
    # Download the image from the url
-   p = subprocess.Popen(['getImage.sh', url, imageDir], stdout=subprocess.PIPE)
+   p = subprocess.Popen(['./getImage.sh', url, imageDir], stdout=subprocess.PIPE)
    out,err=p.communicate()
    print(out)
    # Untar the image
