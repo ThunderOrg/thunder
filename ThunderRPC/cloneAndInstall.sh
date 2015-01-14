@@ -11,9 +11,9 @@ dest=$8
 
 {
 cd $dest
-mkdir $domain
-cp $archive ./$domain/
-cd $domain
+mkdir _$domain
+cp $archive ./_$domain/
+cd _$domain
 tar xf $archive
 mv $disk ../$domain.base
 mv $config ../$domain.config
