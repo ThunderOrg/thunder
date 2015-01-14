@@ -17,7 +17,9 @@ if [[ -e $WD/$FNAME.$EXT ]]; then
     FNAME=$NEWFNAME
 fi
 
+REV=`git rev-list --count HEAD`
 cd $WWW_ROOT
+echo $REV > rev
 tar --exclude='./ubuntu' -czf $FNAME.$EXT ./* 
 cd $WD
 
