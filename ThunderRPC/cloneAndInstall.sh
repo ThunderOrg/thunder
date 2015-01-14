@@ -12,23 +12,29 @@ dest=$8
 {
 cd $dest
 mkdir $domain
-mv $archive ./$domain/
+
+# create a storage pool for this domain
+virsh pool-define-as $domain dir - - - - $dest/$domain
+virsh pool-build $domain
+virsh pool-start $domain
+
+mv $archive $domain/
 cd $domain
 tar xf $archive
+rm $archive
 
 # if there is an overlay image then copy it, otherwise use the base image
 if [[ -n "$overlay" ]]; then
-   imageName=$domain.overlay
+   imageName=$overlay
 else
-   imageName=$domain.base
+   imageName=$disk
 fi
 
 cd ..
 
-virsh pool-refresh default
+virsh pool-refresh $domain
 
-virt-install -r $ram -n $domain --vcpus=$vcpus --hvm --autostart --noautoconsole --vnc --force --accelerate --memballoon virtio --boot hd --disk vol=default/$domain/$imageName,format=qcow2,bus=virtio --disk vol=default/$domain/$config,bus=virtio
-
+virt-install -r $ram -n $domain --vcpus=$vcpus --hvm --autostart --noautoconsole --vnc --force --accelerate --memballoon virtio --boot hd --disk vol=$domain/$imageName,format=qcow2,bus=virtio --disk vol=$domain/$config,bus=virtio
 } > /dev/null 2>&1
 
 MAC=`virsh dumpxml $domain | grep 'mac address' | cut -d\' -f2`
