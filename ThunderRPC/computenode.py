@@ -39,12 +39,12 @@ def instantiate(*params):
    disk = image['disk']
    overlay = image['overlay']
    config = image['config']
-   ram = profile['ram']
-   vcpus = profile['vcpus']
+   ram = str(profile['ram'])
+   vcpus = str(profile['vcpus'])
    dest_dir = constants.get("default.imagedir")
 
    # clone the image and install into virsh
-   virtHelper = subprocess.Popen(['./cloneAndInstall.sh', archive, domain, disk, overlay, config, ram, vcpus, dest_dir], stdout=subprocess.PIPE)
+   virtHelper = subprocess.Popen(['./cloneAndInstall.sh', archive, domain, disk, overlay, config, ram), vcpus, dest_dir], stdout=subprocess.PIPE)
    out, err = virtHelper.communicate()
    mac = out.decode().rstrip().replace(':','-')
    return mac + ':' + domain
