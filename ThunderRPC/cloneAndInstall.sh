@@ -12,7 +12,7 @@ dest=$8
 {
 cd $dest
 mkdir _$domain
-cp $archive ./_$domain/
+mv $archive ./_$domain/
 cd _$domain
 tar xf $archive
 mv $disk ../$domain.base
@@ -27,11 +27,11 @@ else
 fi
 
 cd ..
-rm -rf $domain
+rm -rf _$domain
 
 virsh pool-refresh default
 
-virt-install -r $ram -n $domain --vcpus=$vcpus --hvm --autostart --noautoconsole --vnc --force --accelerate --memballoon virtio --boot hd --disk vol=default/$imageName,format=qcow2,bus=virtio --disk vol=default/$config,bus=virtio
+virt-install -r $ram -n $domain --vcpus=$vcpus --hvm --autostart --noautoconsole --vnc --force --accelerate --memballoon virtio --boot hd --disk vol=default/$imageName,format=qcow2,bus=virtio --disk vol=default/$domain.config,bus=virtio
 
 } > /dev/null 2>&1
 
