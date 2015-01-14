@@ -31,13 +31,20 @@ def instantiate(*params):
    myConnector.insertInstance(domain, "-1", client.name, username, name)
    myConnector.disconnect()
 
-   diskPath = domain + ".img"
-   configPath = domain + ".config"
+   # transfer the archive over
+   archive = image['archive']
+   copyFromNAS(archive, domain, nas)
 
-   copyFromNAS(image['disk'], image['directory'], diskPath, nas)
-   copyFromNAS(image['config'], image['directory'], configPath, nas)
+   # collect data about the archive contents
+   disk = image['disk']
+   overlay = image['overlay']
+   config = image['config']
+   ram = profile['ram']
+   vcpus = profile['vcpus']
+   dest_dir = constants.get("default.imagedir")
 
-   virtHelper = subprocess.Popen(['./cloneAndInstall.sh', diskPath, configPath, domain], stdout=subprocess.PIPE)
+   # clone the image and install into virsh
+   virtHelper = subprocess.Popen(['./cloneAndInstall.sh', archive, domain, disk, overlay, config, ram, vcpus, dest_dir], stdout=subprocess.PIPE)
    out, err = virtHelper.communicate()
    mac = out.decode().rstrip().replace(':','-')
    return mac + ':' + domain
@@ -54,13 +61,10 @@ def destroy(*params):
    myConnector.disconnect()
    return 'success'
 
-def copyFromNAS(imageName, directory, name, server):
+def copyFromNAS(imageName, name, server):
    # Create a temp file for the image
    opener = urllib.request.build_opener(SMBHandler) 
-   print(server)
-   print(directory)
-   print(imageName)
-   src = opener.open("smb://"+server+"/share/images/"+directory+"/"+imageName)
+   src = opener.open("smb://"+server+"/share/images/"+imageName)
 
    # Save the image to the correct location
    dest_dir = constants.get("default.imagedir")
