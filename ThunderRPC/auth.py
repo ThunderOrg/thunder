@@ -1,9 +1,13 @@
-# A component of the ThunderRPC that dealds with node authentication.
-# Developed by Gabriel Jacob Loewen
-# The University of Alabama
-# Cloud and Cluster Computer Lab
-# Copyright 2014 Gabriel Jacob Loewen
+#!/usr/bin/env python3
 
+'''
+auth.py
+-----------------
+Shared key authorization module for THUNDER
+Developed by Gabriel Jacob Loewen
+The University of Alabama
+Cloud and Cluster Computing Group
+'''
 import base64
 from Crypto import Random
 from Crypto.Random import random

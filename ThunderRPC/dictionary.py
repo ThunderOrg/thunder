@@ -1,6 +1,13 @@
-# Dictionary wrapper with additional functions
-# Written by Gabriel Jacob Loewen
-# Copyright 2013 Gabriel Jacob Loewen
+#!/usr/bin/env python3
+
+'''
+dictionary.py
+-----------------
+Dictionary wrapper with additional functions
+Developed by Gabriel Jacob Loewen
+The University of Alabama
+Cloud and Cluster Computing Group
+'''
 
 class Dictionary:
    # Constructor

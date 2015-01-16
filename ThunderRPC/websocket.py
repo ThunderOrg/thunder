@@ -1,9 +1,15 @@
-# Simple websocket support for ThunderRPC
-# Developed by Gabriel Jacob Loewen
-# The University of Alabama
-# Cloud and Cluster Computer Lab
-# Copyright 2014 Gabriel Jacob Loewen
+#!/usr/bin/env python3
 
+'''
+websocket.py
+-----------------
+Simple websocket support for ThunderRPC
+Developed by Gabriel Jacob Loewen
+The University of Alabama
+Cloud and Cluster Computing Group
+'''
+
+# Imports
 from hashlib import sha1
 from base64 import b64encode, b64decode
 from struct import pack, unpack
@@ -34,7 +40,7 @@ class websocket:
       numKeys = 0
       dataArr = data.splitlines()
       for line in dataArr:
-         lineArr = line.decode("UTF8").split(": ")
+         lineArr = line.decode('UTF8').split(': ')
          if (lineArr[0].lower() == 'upgrade' and \
              lineArr[1].lower() == 'websocket'):
             pending = True
@@ -59,9 +65,9 @@ class websocket:
             key = datum.split(': ')[1]
       if (key == ''):
          return False
-      retKey = b64encode(sha1((key+self.magic).encode("UTF8")).digest())
+      retKey = b64encode(sha1((key+self.magic).encode('UTF8')).digest())
       response += 'Sec-WebSocket-Accept: ' + retKey.decode() + '\r\n\r\n'
-      return response.encode("UTF8")
+      return response.encode('UTF8')
 
    # Wrap data inside of a hybi-13 websocket frame.  Does not require masking
    # from server->client.
@@ -88,10 +94,10 @@ class websocket:
    def decode(self, data):
       payloadLen = data[1] & 127
       if (len == 126): # Two more bytes indicate length.  16-bits.
-         payloadLen = unpack(">H", self.socket.recv(2))[0]
+         payloadLen = unpack('>H', self.socket.recv(2))[0]
       elif (len == 127): # Eight more bytes indicate length.  Python should
                          # give us a 64-bit int.
-         payloadLen = unpack(">Q", self.socket.recv(8))[0]
+         payloadLen = unpack('>Q', self.socket.recv(8))[0]
 
       # Get an array of bytes from the key
       maskingKey = self.socket.recv(4)

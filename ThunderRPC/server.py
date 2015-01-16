@@ -1,10 +1,15 @@
-#! /usr/bin/env python3
+#!/usr/bin/env python3
 
-# Cloud Controller (Zeus) component of Thunder
-# Developed by Gabriel Jacob Loewen
-# The University of Alabama
-# Cloud and Cluster Computer Group
+'''
+server.py
+-----------------
+Cloud Controller (Zeus) component of Thunder
+Developed by Gabriel Jacob Loewen
+The University of Alabama
+Cloud and Cluster Computing Group
+'''
 
+# Imports
 from thunder import *
 import sys
 
@@ -14,14 +19,14 @@ def invoke(*params):
    data = params[1]
 
    if (len(data) > 1):
-      if (data[0] == "CONTROL"):
-         if (data[1] == "GET_CLIENT_LIST"):
+      if (data[0] == 'CONTROL'):
+         if (data[1] == 'GET_CLIENT_LIST'):
             return server.getClientList()
-         elif (data[1] == "GET_CLUSTER_LIST"):
+         elif (data[1] == 'GET_CLUSTER_LIST'):
             return server.getClusterList()
-      elif (data[0] == "GROUP"):
+      elif (data[0] == 'GROUP'):
          return server.publishToGroup(params[2], params[1])
-      elif (data[0] == "HOST"):
+      elif (data[0] == 'HOST'):
          host = (params[1], int(params[2]))
          return server.publishToHost(host,params[3])
    # Invalid number of params.  Return error code.

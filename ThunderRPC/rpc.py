@@ -1,27 +1,64 @@
-# rpc.py - Server handlers for thunder RPC implementation
-# Developed by Gabriel Jacob Loewen
-# The University of Alabama
-# Cloud and Cluster Computer Group
+#!/usr/bin/env python3
 
-import auth, socket, socketserver, threading, libvirt, load_balancer, subprocess, shutil, fileinput, networking, threading, os, urllib.request
+'''
+rpc.py
+-----------------
+Remote procedure call handler for THUNDER
+Developed by Gabriel Jacob Loewen
+The University of Alabama
+Cloud and Cluster Computing Group
+'''
+
+# Imports
+import auth, socket, socketserver, threading, libvirt, load_balancer 
+import subprocess, shutil, fileinput, networking, threading, os, urllib.request
 from websocket import *
 from mysql_support import *
 from time import sleep
 
-
-# Each request should be given an independent thread, each handled by
-# the RequestHandler class
+'''
+ThunderRPCServer(socketserver.ThreadingMixIn, socketserver.TCPServer) ---
+Dummy class used to ensure per-request threading
+'''
 class ThunderRPCServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     pass
 
-# Handler class for handling incoming connections
+'''
+RequestHandler(socketserver.BaseRequestHandler) ---
+Each request should be given an independent thread, each handled by
+the RequestHandler class
+'''
 class RequestHandler(socketserver.BaseRequestHandler):
+    '''
+    setup() ---
+        Expected action:
+           Sets up the socket for blocking communication on default
+           also enables background process (daemon) mode for threads.
+
+        Expected positional arguments:
+           Nonde
+
+        Expected return value:
+           None
+    '''
     def setup(self):
         self.daemon_threads = True
         self.request.setsockopt(socket.IPPROTO_TCP,socket.TCP_NODELAY, True)
         self.request.setblocking(1)
         return
+    '''
+    handle() ---
+        Expected action:
+           Reads data from the socket server, determines whether it
+           is a raw message or if it is wrapped in a HYBI websocket
+           frame.  Calls the appropriate handler to process the data.
 
+        Expected positional arguments:
+           Nonde
+
+        Expected return value:
+           None
+    '''
     def handle(self):
         self.container = self.server._ThunderRPCInstance
         self.data = self.request.recv(1024)
@@ -51,8 +88,20 @@ class RequestHandler(socketserver.BaseRequestHandler):
         self.request.close()
         return
 
-    # the data is coming from the web interface.  the web interface should only
-    # be able to retrieve data from clusters and request virtual machines
+    '''
+    processWebsocketRequest(data, websock) ---
+        Expected action:
+           Process incoming messages from the web interface
+           relay these messages to other nodes if need
+           be and return a response to the caller
+
+        Expected positional arguments:
+           data - the raw message after websocket headers have been removed
+           websock - the websock object used to re-encode responses
+
+        Expected return value:
+           None
+    '''
     def processWebsocketRequest(self, data, websock):
         clients = self.container.clients
         # check if the client is requesting data from a group
@@ -71,7 +120,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
 
         # check if the client is requesting a list of clusters available
         elif (data[0] == 'GROUPNAMES'):
-            self.request.sendall(websock.encode(Opcode.text,                                \
+            self.request.sendall(websock.encode(Opcode.text,                   \
                                  self.container.getClusterList()))
 
         # check if the client is requesting a list of nodes in a particular
@@ -83,29 +132,29 @@ class RequestHandler(socketserver.BaseRequestHandler):
         # check if the client is requesting the server to poll for mac
         # addresses, used for deployment
         elif (data[0] == 'POLLMACS'):
-            p = subprocess.Popen("./capturemacs.sh", stdout=subprocess.PIPE,                \
+            p = subprocess.Popen('./capturemacs.sh', stdout=subprocess.PIPE,   \
                                  stderr=subprocess.PIPE)
             out, err = p.communicate()
             macs = out.decode().rstrip().split('\n')
-            result = ""
+            result = ''
             for mac in macs:
-                if (not mac.startswith(constants.get("default.vmMACPrefix"))):
-                    result+=mac.strip() + ";"
+                if (not mac.startswith(constants.get('default.vmMACPrefix'))):
+                    result+=mac.strip() + ';'
             self.request.sendall(websock.encode(Opcode.text, result[:-1]))
 
         elif (data[0] == 'INSTANTIATE'):
             self.container.cleanupClients()
-            nodes = clients.get("COMPUTE")
+            nodes = clients.get('COMPUTE')
             # Message style:
             # INSTANTIATE <VM_NAME> <USER_NAME>
             message = data[0] + ' ' + data[1] + ' ' + data[2]
             # [memTotal, memFree, 1min, 5min, 15min, maxVCore, activeVCore]
-            load = [self.container.publishToHost(nodes[0], "UTILIZATION")]
+            load = [self.container.publishToHost(nodes[0], 'UTILIZATION')]
             for node in nodes[1:]:
-               load += [self.container.publishToHost(node, "UTILIZATION")]
+               load += [self.container.publishToHost(node, 'UTILIZATION')]
             myConnector = mysql(self.container.addr[0], 3306)
             myConnector.connect()
-            weights = myConnector.getWeights("balance")
+            weights = myConnector.getWeights('balance')
             vm = myConnector.getProfileData(data[1])
             myConnector.disconnect()
             selected = load_balancer.select(load, weights, vm)
@@ -117,8 +166,9 @@ class RequestHandler(socketserver.BaseRequestHandler):
                if (nodes[i][0] == selected[0]):
                   index = i
             selectedNode = nodes[index]
-            response = self.container.publishToHost(selectedNode, message, False).split(':')
-            print("RESPONSE: " + str(response))
+            response = self.container.publishToHost(selectedNode, message,     \
+                                                    False).split(':')
+            print('RESPONSE: ' + str(response))
             ip = networking.getIPFromDHCP(response[1])
             myConnector.connect()
             myConnector.updateInstanceIP(response[2], ip)
@@ -135,14 +185,17 @@ class RequestHandler(socketserver.BaseRequestHandler):
                node = myConnector.getNodeByName(instance[2]) 
                nodeAddr = node[1].split(':')
                nodeAddr = (nodeAddr[0],int(nodeAddr[1]))
-               message = "CHECKINSTANCE " + instance[0]
+               message = 'CHECKINSTANCE ' + instance[0]
                response = self.container.publishToHost(nodeAddr, message) 
-               if (response.split(':')[1] == "error" and instance[1] != '-1'):
+               if (response.split(':')[1] == 'error' and instance[1] != '-1'):
                   myConnector.deleteInstance(instance[0])
             instances = myConnector.getUserInstances(username)
             myConnector.disconnect()
-            self.request.sendall(websock.encode(Opcode.text, username+":"+instances))
+            self.request.sendall(websock.encode(Opcode.text, username + ':' +  \
+                                 instances))
 
+        # the user has requested that an instance be destroyed.
+        # a message should be relayed to the node hosting the instance.
         elif (data[0] == 'DESTROYINSTANCE'):
             username = data[1]
             domain = data[2]
@@ -155,7 +208,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
                   node = myConnector.getNodeByName(instance[2])
                   nodeAddr = node[1].split(':')
                   nodeAddr = (nodeAddr[0],int(nodeAddr[1]))
-                  message = "DESTROY " + instance[0]
+                  message = 'DESTROY ' + instance[0]
                   self.container.publishToHost(nodeAddr, message)
                   result = 'success'
                   break
@@ -163,35 +216,36 @@ class RequestHandler(socketserver.BaseRequestHandler):
             print(result)
             self.request.sendall(websock.encode(Opcode.text, result))
 
-        elif (data[0] == "RAINCONSTANTS"):
+        # retrieve the RAIN constants from the database and send them to the
+        # caller
+        elif (data[0] == 'RAINCONSTANTS'):
             myConnector = mysql(self.container.addr[0], 3306)
             myConnector.connect()
-            weights = myConnector.getWeights("balance")
-            result = ""
+            weights = myConnector.getWeights('balance')
+            result = ''
             for weight in weights:
-               result += str(weight) + ";"
+               result += str(weight) + ';'
             myConnector.disconnect()
             self.request.sendall(websock.encode(Opcode.text, result[0:-1]))
 
-        elif (data[0] == "UPDATERAIN"):
+        elif (data[0] == 'UPDATERAIN'):
             myConnector = mysql(self.container.addr[0], 3306)
             myConnector.connect()
-            myConnector.updateWeights("balance", data[1:])
+            myConnector.updateWeights('balance', data[1:])
             myConnector.disconnect()
-            self.request.sendall(websock.encode(Opcode.text, "RAIN Constants Update: SUCCESS"))
+            self.request.sendall(websock.encode(Opcode.text, '0'))
 
-        elif (data[0] == "IMAGELIST"):
-            print("Image List")
+        elif (data[0] == 'IMAGELIST'):
             myConnector = mysql(self.container.addr[0], 3306)
             myConnector.connect()
             images = myConnector.getImages()
             myConnector.disconnect()
-            result = ""
+            result = ''
             for image in images:
-               result += image[0] + ";"
+               result += image[0] + ';'
             self.request.sendall(websock.encode(Opcode.text, result[0:-1]))
 
-        elif (data[0] == "SAVEPROFILE"):
+        elif (data[0] == 'SAVEPROFILE'):
             name = data[1]
             title = data[2]
             desc = data[3]
@@ -203,63 +257,102 @@ class RequestHandler(socketserver.BaseRequestHandler):
             myConnector.insertProfile(name, title, desc, ram, vcpu, image)
             myConnector.disconnect()
 
-        elif (data[0] == "IMPORTIMAGE"):
+        elif (data[0] == 'IMPORTIMAGE'):
             url = data[1]
             myConnector = mysql(self.container.addr[0], 3306)
             myConnector.connect()
             storageNodes = myConnector.getStorageNodes()
             myConnector.disconnect()
             # Figure out what to do with multiple storage nodes
-            nodeAddr = storageNodes[0][1].split(":")
+            nodeAddr = storageNodes[0][1].split(':')
             nodeAddr = (nodeAddr[0],int(nodeAddr[1]))
-            message = "IMPORTIMAGE " + url
+            message = 'IMPORTIMAGE ' + url
             res = self.container.publishToHost(nodeAddr, message, False)
             print(res)
 
-        elif (data[0] == "PROFILEINFO"):
+        elif (data[0] == 'PROFILEINFO'):
             myConnector = mysql(self.container.addr[0], 3306)
             myConnector.connect()
             profile = myConnector.getProfile(data[1])
             myConnector.disconnect()
-            result = ""
+            result = ''
             for datum in profile:
-               result += str(datum) + ";"
+               result += str(datum) + ';'
             self.request.sendall(websock.encode(Opcode.text, result[0:-1]))
         
-        elif (data[0] == "DEPLOY"):
+        elif (data[0] == 'DEPLOY'):
             role = data[1]
-            macs = data[2].split(";")[0:-1]
+            macs = data[2].split(';')[0:-1]
             for mac in macs:
                oldDHCPTime = networking.getDHCPRenewTime(mac)
-               tftpDir = constants.get("default.tftpdir")
-               shutil.copyfile("pxetemplate.cfg", tftpDir + "/pxelinux.cfg/01-" + mac)
-               for line in fileinput.input(tftpDir + "/pxelinux.cfg/01-" + mac, inplace=True):
-                  if "<ROLE>" in line:
-                     print(line.replace("<ROLE>", role), end="")
-                  elif "<SERVER_IP>" in line:
-                     print(line.replace("<SERVER_IP>", self.container.addr[0]), end="")
+               tftpDir = constants.get('default.tftpdir')
+               shutil.copyfile('pxetemplate.cfg', tftpDir +                    \
+                               '/pxelinux.cfg/01-' + mac)
+               fname = tftpDir + '/pxelinux.cfg/01-' + mac
+               for line in fileinput.input(fname, inplace=True):
+                  if '<ROLE>' in line:
+                     print(line.replace('<ROLE>', role), end='')
+                  elif '<SERVER_IP>' in line:
+                     print(line.replace('<SERVER_IP>',                         \
+                                        self.container.addr[0]),               \
+                                        end='')
                   else:
-                     print(line, end="")
-               t = threading.Thread(target = self.detectDHCPRenew, args = (mac, oldDHCPTime, ))
+                     print(line, end='')
+               t = threading.Thread(target = self.detectDHCPRenew,             \
+                                    args = (mac, oldDHCPTime, ))
                t.start()
-            self.request.sendall(websock.encode(Opcode.text, "Deployment: SUCCESS"))
+            self.request.sendall(websock.encode(Opcode.text, '0'))
 
         else:
-            print("DATA:",data)
+            print('DATA:',data)
 
         return
 
+    '''
+    detectDHCPRenew(mac, time) ---
+        Expected action:
+           Read the DHCP log to determine if a particular
+           MAC address has been assigned a new IP address.
+           Once a new IP has been issued then it is safe
+           to remove any PXE configurations for this node.
+
+           Explanation: This is used for deployment.  We assume
+           That after the node boots and gets configured over 
+           PXE then it is okay to discard the configuration
+           so that the node does not get redeployed on the next
+           boot
+
+        Expected positional arguments:
+           mac - The MAC address of the node in question
+           time - The previous time that the node received an IP address
+
+        Expected return value:
+           None
+    '''
     def detectDHCPRenew(self, mac, time):
         changed = False
         while (not changed):
            newTime = networking.getDHCPRenewTime(mac)
            if newTime != time:
               changed = True
-              print("Detected DHCP renew of MAC:", mac)
+              print('Detected DHCP renew of MAC:', mac)
         sleep(120)
-        os.remove(constants.get("default.tftpdir") + "/pxelinux.cfg/01-" + mac)
-        print("Removed PXE configuration")
+        os.remove(constants.get('default.tftpdir') + '/pxelinux.cfg/01-' + mac)
+        print('Removed PXE configuration')
 
+    '''
+    processTraditionalRequest(data) ---
+        Expected action:
+           Process incoming messages from another physical node
+           relay these messages to other nodes if need
+           be and return a response to the caller
+
+        Expected positional arguments:
+           data - the raw message
+
+        Expected return value:
+           None
+    '''
     def processTraditionalRequest(self, data):
         client = self.client_address
         events = self.container.events
@@ -273,12 +366,11 @@ class RequestHandler(socketserver.BaseRequestHandler):
                 params += [datum]
 
             # call the function and get the result
-            response = func(data[0],params)
-            respList = response.split()
+            response = str(func(data[0],params))
                
             if (response != None):
                 # send the result to the caller
-                self.request.sendall(str(response).encode('UTF8'))
+                self.request.sendall(response.encode('UTF8'))
 
         # check if the request is a query for the service role
         # (PUBLISHER | SUBSCRIBER)
@@ -306,12 +398,13 @@ class RequestHandler(socketserver.BaseRequestHandler):
                     else:
                         c = [(data[1], int(data[2]))]
                         clients.append((data[3], c))
+
         # check if the caller is sending a heartbeat
         elif (data[0] == 'HEARTBEAT'):
             # check if the client is still registered
             response = data[0]
             if (len(clients.collection()) == 0):
-               response = "SUBSCRIBE"
+               response = 'SUBSCRIBE'
             else:
                found = False
                for group in clients.collection():
@@ -319,9 +412,10 @@ class RequestHandler(socketserver.BaseRequestHandler):
                      if (ip[0] == data[1] and str(ip[1]) == data[2]):
                         found = True
                if (not found):
-                  response = "SUBSCRIBE"
+                  response = 'SUBSCRIBE'
             self.request.sendall(response.encode('UTF8'))
-
+        
+        # check if an instance is running
         elif (data[0] == 'CHECKINSTANCE'):
             virtcon = libvirt.openReadOnly(None)
             if (virtcon == None):
@@ -330,11 +424,10 @@ class RequestHandler(socketserver.BaseRequestHandler):
                virtcon.lookupByName(data[1])
                self.request.sendall('success'.encode('UTF8'))
             except:
-               print("Exception happened in checkinstance")
                self.request.sendall('error'.encode('UTF8'))
             virtcon.close()
 
         else:
-            print("DATA:",data)
+            print('DATA:',data)
 
         return

@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 
-# Compute Controller (Thor) component of Thunder
-# Developed by Gabriel Jacob Loewen
-# The University of Alabama
-# Cloud and Cluster Computer Group
+'''
+computenode.py
+-----------------
+Compute Controller (Thor) component of THUNDER
+Developed by Gabriel Jacob Loewen
+The University of Alabama
+Cloud and Cluster Computing Group
+'''
 
+# Imports
 import tempfile, libvirt, urllib.request, shutil, os, subprocess
 from mysql_support import mysql
 from thunder import *
@@ -12,13 +17,31 @@ from smb.SMBHandler import SMBHandler
 from uuid import uuid1
 from time import sleep
 
+'''
+instantiate(*params) ---
+    Expected action:
+        This function should copy the virtual machine image
+        from the storage node, unpack the image, generate
+        a unique domain name, and instantiate it.
+
+    Expected positional arguments:
+        args[0] - Virtual machine name
+        args[1] - Username of requester
+
+    Expected return value:
+        MAC Aaddress of virtual machine instance with colonds replaced with 
+        dashesand and the domain name in the format: "<MAC>:<DOMAIN>"
+'''
 def instantiate(*params):
+   # Get posiotional arguments
    args = params[1]
    name = args[0]
    username = args[1]
 
+   # Get the IP of the publisher
    publisher = client.publisher[0]
 
+   # Get image information
    myConnector = mysql(publisher, 3306)
    myConnector.connect()
    profile = myConnector.getProfileData(name)
@@ -28,7 +51,7 @@ def instantiate(*params):
    # Lookup name in database to find network location of image
    nas = myConnector.getNASAddress(serverName)[0].split(':')[0]
    domain = str(uuid1()).replace('-','')
-   myConnector.insertInstance(domain, "-1", client.name, username, name)
+   myConnector.insertInstance(domain, '-1', client.name, username, name)
    myConnector.disconnect()
 
    # transfer the archive over
@@ -41,44 +64,80 @@ def instantiate(*params):
    config = image['config']
    ram = str(profile['ram'])
    vcpus = str(profile['vcpus'])
-   dest_dir = constants.get("default.imagedir")
+   dest_dir = constants.get('default.imagedir'
 
    # clone the image and install into virsh
-   virtHelper = subprocess.Popen(['./cloneAndInstall.sh', archive, domain, disk, overlay, config, ram, vcpus, dest_dir], stdout=subprocess.PIPE)
+   virtHelper = subprocess.Popen(['./cloneAndInstall.sh', archive, domain,     \
+                                  disk, overlay, config, ram, vcpus,           \
+                                  dest_dir], stdout=subprocess.PIPE,           \
+                                  stderr=subprocess.PIPE)
    out, err = virtHelper.communicate()
    mac = out.decode().rstrip().replace(':','-')
    return mac + ':' + domain
 
+'''
+destroy(*params) ---
+    Expected action:
+        This function should stop and destroy a running
+        virtual machine
+
+    Expected positional arguments:
+        args[0] - Domain name of running virtual machine instance
+
+    Expected return value:
+        0 - successful
+        1 - unsuccessful
+'''
 def destroy(*params):
    args = params[1]
    domain = args[0]
-   vmDestructor = subprocess.Popen(['./destroyVM.sh', domain], stdout=subprocess.PIPE)
-   vmDestructor.communicate()
+   vmDestructor = subprocess.Popen(['./destroyVM.sh', domain],                 \
+                                   stdout=subprocess.PIPE)
+   out, err = vmDestructor.communicate()
+   if (err != ""):
+      return 1
    publisher = client.publisher[0]
    myConnector = mysql(publisher, 3306)
    myConnector.connect()
    myConnector.deleteInstance(domain)
    myConnector.disconnect()
-   return 'success'
+   return 0
 
+'''
+copyFromNAS(imageName, name, server) ---
+    Expected action:
+        This function should copy a file from the storage node
+        to the local images directory
+
+    Expected positional arguments:
+        imageName - Name of the archive to copy (ex: ubuntu.tar.xz)
+        name - Name to save the image as locally (ex: myimage.tar.xz)
+        server - IP and port of storage node to copy data from                 \
+                 (ex: (10.10.0.1:48574))
+
+    Expected return value:
+        0 - successful
+        1 - unsuccessful
+'''
 def copyFromNAS(imageName, name, server):
    # Create a temp file for the image
    opener = urllib.request.build_opener(SMBHandler) 
-   src = opener.open("smb://"+server+"/share/images/"+imageName)
+   src = opener.open('smb://'server+'share/images/'imageName)
 
    # Save the image to the correct location
-   dest_dir = constants.get("default.imagedir")
+   dest_dir = constants.get('default.imagedir')
 
-   fname = dest_dir + "/" + name
+   fname = dest_dir + '/' + name
 
-   dest = open(fname, "wb")
+   dest = open(fname, 'wb')
    shutil.copyfileobj(src,dest)
 
    # Close files
    src.close()
    dest.close()
 
+# Start up the service and register events
 client = ThunderRPC()
-client.registerEvent("INSTANTIATE", instantiate)
-client.registerEvent("DESTROY", destroy)
+client.registerEvent('INSTANTIATE', instantiate)
+client.registerEvent('DESTROY', destroy)
 client.findPublisher()
