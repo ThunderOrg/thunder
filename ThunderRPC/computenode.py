@@ -122,7 +122,7 @@ copyFromNAS(imageName, name, server) ---
 def copyFromNAS(imageName, name, server):
    # Create a temp file for the image
    opener = urllib.request.build_opener(SMBHandler) 
-   src = opener.open('smb://'server+'share/images/'imageName)
+   src = opener.open('smb://' + server + 'share/images/' + imageName)
 
    # Save the image to the correct location
    dest_dir = constants.get('default.imagedir')
