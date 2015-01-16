@@ -64,7 +64,7 @@ def instantiate(*params):
    config = image['config']
    ram = str(profile['ram'])
    vcpus = str(profile['vcpus'])
-   dest_dir = constants.get('default.imagedir'
+   dest_dir = constants.get('default.imagedir')
 
    # clone the image and install into virsh
    virtHelper = subprocess.Popen(['./cloneAndInstall.sh', archive, domain,     \
