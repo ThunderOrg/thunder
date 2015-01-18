@@ -168,7 +168,6 @@ class RequestHandler(socketserver.BaseRequestHandler):
             selectedNode = nodes[index]
             response = self.container.publishToHost(selectedNode, message,     \
                                                     False).split(':')
-            print('RESPONSE: ' + str(response))
             ip = networking.getIPFromDHCP(response[1])
             myConnector.connect()
             myConnector.updateInstanceIP(response[2], ip)
@@ -213,7 +212,6 @@ class RequestHandler(socketserver.BaseRequestHandler):
                   result = 'success'
                   break
             myConnector.disconnect()
-            print(result)
             self.request.sendall(websock.encode(Opcode.text, result))
 
         # retrieve the RAIN constants from the database and send them to the
@@ -268,7 +266,6 @@ class RequestHandler(socketserver.BaseRequestHandler):
             nodeAddr = (nodeAddr[0],int(nodeAddr[1]))
             message = 'IMPORTIMAGE ' + url
             res = self.container.publishToHost(nodeAddr, message, False)
-            print(res)
 
         elif (data[0] == 'PROFILEINFO'):
             myConnector = mysql(self.container.addr[0], 3306)
@@ -377,10 +374,43 @@ class RequestHandler(socketserver.BaseRequestHandler):
         elif (data[0] == 'ROLE'):
             self.request.sendall(self.container.role.encode('UTF8'))
 
+        elif (data[0] == 'INSTANTIATE'):
+            self.container.cleanupClients()
+            nodes = clients.get('COMPUTE')
+            # Message style:
+            # INSTANTIATE <VM_NAME> <USER_NAME>
+            message = data[0] + ' ' + data[1] + ' ' + data[2]
+            # [memTotal, memFree, 1min, 5min, 15min, maxVCore, activeVCore]
+            load = [self.container.publishToHost(nodes[0], 'UTILIZATION')]
+            for node in nodes[1:]:
+               load += [self.container.publishToHost(node, 'UTILIZATION')]
+            myConnector = mysql(self.container.addr[0], 3306)
+            myConnector.connect()
+            weights = myConnector.getWeights('balance')
+            vm = myConnector.getProfileData(data[1])
+            myConnector.disconnect()
+            selected = load_balancer.select(load, weights, vm)
+            if (selected == None):
+               # Couldn't find a node to instantiate the vm
+               return
+            index = -1
+            for i in range(0, len(nodes), 1):
+               if (nodes[i][0] == selected[0]):
+                  index = i
+            selectedNode = nodes[index]
+            response = self.container.publishToHost(selectedNode, message,     \
+                                                    False).split(':')
+            print("RESPONSE = " + str(response))
+            ip = networking.getIPFromDHCP(response[1])
+            myConnector.connect()
+            myConnector.updateInstanceIP(response[2], ip)
+            myConnector.disconnect()
+            self.request.sendall(ip.encode('UTF8'))
+
+
         # check if the caller is requesting a nonce for authorization
         elif (data[0] == 'AUTH'):
             nonce = auth.generateNonce()
-            print(nonce)
             self.container._nonce = nonce
             self.request.sendall(nonce.encode('UTF8'))
 
