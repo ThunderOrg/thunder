@@ -93,10 +93,9 @@ class websocket:
    # Read a hybi-13 websocket frame and unmask the payload.
    def decode(self, data):
       payloadLen = data[1] & 127
-      if (len == 126): # Two more bytes indicate length.  16-bits.
+      if (payloadLen == 126): # Two more bytes indicate length.  16-bits.
          payloadLen = unpack('>H', self.socket.recv(2))[0]
-      elif (len == 127): # Eight more bytes indicate length.  Python should
-                         # give us a 64-bit int.
+      elif (payloadLen == 127): # Eight more bytes indicate length.
          payloadLen = unpack('>Q', self.socket.recv(8))[0]
 
       # Get an array of bytes from the key

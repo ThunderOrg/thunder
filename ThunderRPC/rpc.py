@@ -61,7 +61,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
     '''
     def handle(self):
         self.container = self.server._ThunderRPCInstance
-        self.data = self.request.recv(1024)
+        self.data = self.request.recv(4096)
         websock = websocket(self.request)
         decodedData = ''
         ws = False
@@ -168,6 +168,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
             selectedNode = nodes[index]
             response = self.container.publishToHost(selectedNode, message,     \
                                                     False).split(':')
+            print(response)
             ip = networking.getIPFromDHCP(response[1])
             myConnector.connect()
             myConnector.updateInstanceIP(response[2], ip)
@@ -244,16 +245,17 @@ class RequestHandler(socketserver.BaseRequestHandler):
             self.request.sendall(websock.encode(Opcode.text, result[0:-1]))
 
         elif (data[0] == 'SAVEPROFILE'):
-            name = data[1]
-            title = data[2]
-            desc = data[3]
-            ram = data[4]
-            vcpu = data[5]
-            image = data[6]
-            myConnector = mysql(self.container.addr[0], 3306)
-            myConnector.connect()
-            myConnector.insertProfile(name, title, desc, ram, vcpu, image)
-            myConnector.disconnect()
+            #name = data[1]
+            #title = data[2]
+            #desc = data[3]
+            #ram = data[4]
+            #vcpu = data[5]
+            #image = data[6]
+            #myConnector = mysql(self.container.addr[0], 3306)
+            #myConnector.connect()
+            #myConnector.insertProfile(name, title, desc, ram, vcpu, image)
+            #myConnector.disconnect()
+            print(data)
 
         elif (data[0] == 'IMPORTIMAGE'):
             url = data[1]
@@ -392,6 +394,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
             selected = load_balancer.select(load, weights, vm)
             if (selected == None):
                # Couldn't find a node to instantiate the vm
+               self.request.sendall('-1'.encode('UTF8'))
                return
             index = -1
             for i in range(0, len(nodes), 1):
@@ -400,13 +403,11 @@ class RequestHandler(socketserver.BaseRequestHandler):
             selectedNode = nodes[index]
             response = self.container.publishToHost(selectedNode, message,     \
                                                     False).split(':')
-            print("RESPONSE = " + str(response))
             ip = networking.getIPFromDHCP(response[1])
             myConnector.connect()
             myConnector.updateInstanceIP(response[2], ip)
             myConnector.disconnect()
             self.request.sendall(ip.encode('UTF8'))
-
 
         # check if the caller is requesting a nonce for authorization
         elif (data[0] == 'AUTH'):

@@ -113,8 +113,6 @@ class mysql():
       cur.close()
 
    def updateInstanceIP(self, domain, ip):
-      print("domain:",domain)
-      print("ip:",ip)
       cur = self.conn.cursor()
       cur.execute("UPDATE instances SET ip='" + ip + "' WHERE domain='" +      \
                   domain +"';") 

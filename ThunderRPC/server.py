@@ -13,6 +13,12 @@ Cloud and Cluster Computing Group
 from thunder import *
 import sys
 import random
+import threading
+from time import sleep
+
+success=0
+total=0
+lock = threading.Lock()
 
 # Invoke a function and return the result.
 def invoke(*params):
@@ -39,20 +45,31 @@ def printTable(table):
    for machine in table.split(';'):
       m = machine.split(':')
       print(m[0].split('.')[-1],round(float(m[1])/(1024*1024),2),round(float(m[2])/(1024*1024),2),m[3],m[4],m[5],m[6],m[7],sep="\t")
+   print('----------')
+
+def startVM(profile):
+   global success
+   global total
+   vm = server.publishToHost(server.addr, 'INSTANTIATE ' + profiles[0] + ' admin', False)
+   vm = vm.split(':')
+   lock.acquire()
+   total+=1
+   if (vm[1] != '-1'):
+      success+=1
+   print("Total:", total, "Failed:", total-success)
+   lock.release()
 
 # Instantiate NetEvent and register the invoke event
 server = ThunderRPC(role = 'PUBLISHER', group = 'CONTROLLER')
 server.registerEvent('INVOKE', invoke)
 
 profiles = ['ubuntu_bare_small', 'ubuntu_bare_medium', 'ubuntu_bare_large']
-
 while(1):
    n = int(input('n: '))
-   z = server.publishToGroup('COMPUTE', 'UTILIZATION')
-   printTable(z)
-   random.shuffle(profiles)
-   vm = server.publishToHost(server.addr, 'INSTANTIATE ' + profiles[0] + ' admin')
-   print("RESULT = " + vm)
-   z = server.publishToGroup('COMPUTE', 'UTILIZATION')
-   printTable(z)
-
+   #z = server.publishToGroup('COMPUTE', 'UTILIZATION')
+   #printTable(z)
+   for i in range(0, n, 1):
+      random.shuffle(profiles)
+      t = threading.Thread(target=startVM, args=(profiles[0],))
+      t.start()
+      sleep(2000)

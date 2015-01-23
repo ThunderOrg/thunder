@@ -11,9 +11,10 @@ Cloud and Cluster Computing Group
 
 # Get the default number of vcores allocated per physical core
 VCORES_PERCORE = constants.get('default.vcoresPerCore')
+rr_index=0
 
 '''
-select(nodes, weights, vm) ---
+rain_select(nodes, weights, vm) ---
     Expected action:
         Select a node to instantiate using RAIN
 
@@ -25,7 +26,7 @@ select(nodes, weights, vm) ---
     Expected return value:
         The selected node descriptor if one is suitable, None otherwise
 '''
-def select(nodes, weights, vm):
+def rain_select(nodes, weights, vm):
    rankings = getRankings(nodes, weights)
    sortedRankings = sorted(rankings, key=lambda rank: rank[1])
    for rank in sortedRankings:
@@ -109,3 +110,66 @@ def fits(node, vm):
    if (freeVCores >= int(vm['vcpus']) and freeRam >= int(vm['ram'])):
       return True
    return False
+
+'''
+rr_reset() ---
+    Expected action:
+        Resets the node array index for round robin
+
+    Expected positional arguments:
+        None
+
+    Expected return value:
+        None
+'''
+def rr_reset():
+   global rr_index
+   rr_index=0
+
+'''
+rr_select() ---
+    Expected action:
+        Selects a node using round robin
+
+    Expected positional arguments:
+        nodes - array of node metadata
+        vm - virtual machine descriptor (RAM, #cores, etc,)
+
+    Expected return value:
+        The node, if one exists.  None otherwise.
+'''
+def rr_select(nodes, vm):
+   global rr_index
+   orig_index = rr_index
+   retval = None
+   while (1):
+      if (rr_index == orig_index):
+         break
+      node = nodes[rr_index].split(':')
+      if (fits(node, vm)):
+         retval = node
+         break
+      rr_index += 1
+      if (rr_index > len(nodes)-1):
+         rr_reset()
+   return retval
+
+'''
+rand_select() ---
+    Expected action:
+        Selects a random node
+
+    Expected positional arguments:
+        nodes - array of node metadata
+        vm - virtual machine descriptor (RAM, #cores, etc,)
+
+    Expected return value:
+        The node, if one exists.  None otherwise.
+'''
+def rand_select(nodes, vm):
+   r = random.randrange(0, len(nodes), 1)
+   node = nodes[r].split(':')
+   if (fits(node, vm)):
+      return node
+   else:
+      return None
