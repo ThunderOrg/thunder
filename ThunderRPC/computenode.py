@@ -66,14 +66,12 @@ def instantiate(*params):
    vcpus = str(profile['vcpus'])
    dest_dir = constants.get('default.imagedir')
 
-   print("BEFORE INST")
    # clone the image and install into virsh
    virtHelper = subprocess.Popen(['./cloneAndInstall.sh', archive, domain,     \
                                   disk, overlay, config, ram, vcpus,           \
                                   dest_dir], stdout=subprocess.PIPE,           \
                                   stderr=subprocess.PIPE)
    out, err = virtHelper.communicate()
-   print("AFTER INST")
    mac = out.decode().rstrip().replace(':','-')
    return mac + ':' + domain
 

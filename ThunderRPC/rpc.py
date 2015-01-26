@@ -443,6 +443,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
                                                     False).split(':')
             print("RESPONSE:",response)
             ip = networking.getIPFromDHCP(response[1])
+            print("IP:", ip)
             myConnector.connect()
             myConnector.updateInstanceIP(response[2], ip)
             myConnector.disconnect()
@@ -491,9 +492,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
             if (virtcon == None):
                self.request.sendall('error'.encode('UTF8'))
             try:
-               print("BEFORE LOOKUP")
                virtcon.lookupByName(data[1])
-               print("AFTER LOOKUP")
                self.request.sendall('success'.encode('UTF8'))
             except:
                self.request.sendall('error'.encode('UTF8'))
