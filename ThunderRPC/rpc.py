@@ -15,6 +15,13 @@ import subprocess, shutil, fileinput, networking, threading, os, urllib.request
 from websocket import *
 from mysql_support import *
 from time import sleep
+from enum import Enum
+
+class LBMode(Enum):
+   RAIN=0
+   ROUNDROBIN=1
+   CONSOLIDATE=2
+   RANDOM=3
 
 '''
 ThunderRPCServer(socketserver.ThreadingMixIn, socketserver.TCPServer) ---
@@ -45,6 +52,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
         self.daemon_threads = True
         self.request.setsockopt(socket.IPPROTO_TCP,socket.TCP_NODELAY, True)
         self.request.setblocking(1)
+        self.lbMode = LBMode['RAIN']
         return
     '''
     handle() ---
@@ -157,9 +165,20 @@ class RequestHandler(socketserver.BaseRequestHandler):
             weights = myConnector.getWeights('balance')
             vm = myConnector.getProfileData(data[1])
             myConnector.disconnect()
-            selected = load_balancer.select(load, weights, vm)
+
+            selected = None
+            if (self.lbMode == LBMode.RAIN):
+               selected = load_balancer.rain_select(load, weights, vm)
+            elif (self.lbMode == LBMode.ROUNDROBIN):
+               selected = load_balancer.rr_select(load, vm)
+            elif (self.lbMode == LBMode.CONSOLIDATE):
+               selected = load_balancer.rain_select(load, (0) * 5, vm)
+            elif (self.lbMode == LBMode.RANDOM):
+               selected = load_balancer.rand_select(load, vm)
+
             if (selected == None):
                # Couldn't find a node to instantiate the vm
+               self.request.sendall(websock.encode(Opcode.text, "-1"))
                return
             index = -1
             for i in range(0, len(nodes), 1):
@@ -168,7 +187,6 @@ class RequestHandler(socketserver.BaseRequestHandler):
             selectedNode = nodes[index]
             response = self.container.publishToHost(selectedNode, message,     \
                                                     False).split(':')
-            print(response)
             ip = networking.getIPFromDHCP(response[1])
             myConnector.connect()
             myConnector.updateInstanceIP(response[2], ip)
@@ -226,6 +244,13 @@ class RequestHandler(socketserver.BaseRequestHandler):
                result += str(weight) + ';'
             myConnector.disconnect()
             self.request.sendall(websock.encode(Opcode.text, result[0:-1]))
+
+        elif (data[0] == 'CHANGELBMODE'):
+            mode = data[1]
+            try:
+               self.lbMode = LBMode[mode] 
+            except:
+               print(mode,"is not a valid load balance mode.")
 
         elif (data[0] == 'UPDATERAIN'):
             myConnector = mysql(self.container.addr[0], 3306)
@@ -391,7 +416,19 @@ class RequestHandler(socketserver.BaseRequestHandler):
             weights = myConnector.getWeights('balance')
             vm = myConnector.getProfileData(data[1])
             myConnector.disconnect()
-            selected = load_balancer.select(load, weights, vm)
+
+            selected = None
+            if (self.lbMode == LBMode.RAIN):
+               selected = load_balancer.rain_select(load, weights, vm)
+            elif (self.lbMode == LBMode.ROUNDROBIN):
+               selected = load_balancer.rr_select(load, vm)
+            elif (self.lbMode == LBMode.CONSOLIDATE):
+               selected = load_balancer.rain_select(load, weights, vm)
+            elif (self.lbMode == LBMode.RANDOM):
+               selected = load_balancer.rand_select(load, vm)
+
+            print(selected)
+
             if (selected == None):
                # Couldn't find a node to instantiate the vm
                self.request.sendall('-1'.encode('UTF8'))

@@ -14,7 +14,7 @@ from thunder import *
 import sys
 import random
 import threading
-from time import sleep
+from time import time, sleep
 
 success=0
 total=0
@@ -50,13 +50,16 @@ def printTable(table):
 def startVM(profile):
    global success
    global total
-   vm = server.publishToHost(server.addr, 'INSTANTIATE ' + profiles[0] + ' admin', False)
+   begin = round(time() * 1000)
+   vm = server.publishToHost(server.addr, 'INSTANTIATE ' + profile + ' admin', False)
+   turnaround = round(time() * 1000) - begin
    vm = vm.split(':')
+   print(vm[1], " ", profile," (",total,") took ", turnaround, "ms to instantiate.", sep="")
    lock.acquire()
    total+=1
    if (vm[1] != '-1'):
       success+=1
-   print("Total:", total, "Failed:", total-success)
+   print("Total:", total, "Failed:", total - success)
    lock.release()
 
 # Instantiate NetEvent and register the invoke event
@@ -69,7 +72,7 @@ while(1):
    #z = server.publishToGroup('COMPUTE', 'UTILIZATION')
    #printTable(z)
    for i in range(0, n, 1):
-      random.shuffle(profiles)
-      t = threading.Thread(target=startVM, args=(profiles[0],))
+      p = random.choice(profiles)
+      t = threading.Thread(target=startVM, args=(p,))
       t.start()
-      sleep(2000)
+      sleep(1) 
