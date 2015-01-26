@@ -37,4 +37,5 @@ virsh pool-refresh $domain
 virt-install -r $ram -n $domain --vcpus=$vcpus --hvm --autostart --noautoconsole --vnc --force --accelerate --memballoon virtio --boot hd --disk vol=$domain/$imageName,format=qcow2,bus=virtio --disk vol=$domain/$config,bus=virtio
 MAC=`virsh dumpxml $domain | grep 'mac address' | cut -d\' -f2`
 } > /dev/null 2>&1
+
 echo $MAC
