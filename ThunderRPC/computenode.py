@@ -10,7 +10,7 @@ Cloud and Cluster Computing Group
 '''
 
 # Imports
-import tempfile, libvirt, urllib.request, shutil, os, subprocess
+import tempfile, urllib.request, shutil, os, subprocess
 from mysql_support import mysql
 from thunder import *
 from smb.SMBHandler import SMBHandler

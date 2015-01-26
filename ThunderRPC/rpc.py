@@ -402,6 +402,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
             self.request.sendall(self.container.role.encode('UTF8'))
 
         elif (data[0] == 'INSTANTIATE'):
+            print("INSTANTIATE TRADITIONAL")
             self.container.cleanupClients()
             nodes = clients.get('COMPUTE')
             # Message style:
@@ -427,7 +428,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
             elif (self.lbMode == LBMode.RANDOM):
                selected = load_balancer.rand_select(load, vm)
 
-            print(selected)
+            print("SELECTED:",selected)
 
             if (selected == None):
                # Couldn't find a node to instantiate the vm
