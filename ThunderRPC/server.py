@@ -52,9 +52,9 @@ def startVM(profile):
    turnaround = round(time() * 1000) - begin
    vm = vm.split(':')
    if (vm[1] == ''):
-      print("VM " + str(total) + "\tFailed\t" + str(turnaround))
+      print("VM" + str(total) + "\t\tFailed\t\t" + str(turnaround))
    else:
-      print("VM " + str(total) + "\tSuccess\t" + str(turnaround))
+      print("VM" + str(total) + "\t\tSuccess\t\t" + str(turnaround))
    total+=1
 
 # Instantiate NetEvent and register the invoke event
@@ -63,9 +63,13 @@ server.registerEvent('INVOKE', invoke)
 
 profiles = ['ubuntu_bare_small', 'ubuntu_bare_medium', 'ubuntu_bare_large']
 while(1):
-   n = int(input('n: '))
-   #z = server.publishToGroup('COMPUTE', 'UTILIZATION')
-   #printTable(z)
+   n = input('')
+   if (n == 'kill'):
+      server.publishToGroup('COMPUTE', 'DESTROYALL')
+      global total
+      total = 0
+      continue
+   
    for i in range(0, n, 1):
       p = random.choice(profiles)
       t = threading.Thread(target=startVM, args=(p,))

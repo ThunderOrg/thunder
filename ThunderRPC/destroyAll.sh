@@ -1,5 +1,5 @@
 #!/bin/bash
-
+{
 domains=`virsh list | awk '{print $2}' | sed '1,2d' | sed '$d'`
 
 for domain in $domains; do
@@ -10,3 +10,6 @@ for domain in $domains; do
    rm -r /srv/images/$domain
    rm -r /srv/images/$domain
 done
+} > /dev/null 2>&1
+
+echo domains

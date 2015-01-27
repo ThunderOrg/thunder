@@ -104,6 +104,32 @@ def destroy(*params):
    return 0
 
 '''
+destroyAll(*params) ---
+    Expected action:
+        This function should stop and destroy all running
+        virtual machine
+
+    Expected positional arguments:
+        None
+
+    Expected return value:
+        0 - successful
+        1 - unsuccessful
+'''
+def destroyAll(*params):
+   vmDestructor = subprocess.Popen('./destroyAll.sh',                 \        
+                                   stdout=subprocess.PIPE)
+   out, err = vmDestructor.communicate()
+   if (err != ""):
+      return 1
+   publisher = client.publisher[0]
+   myConnector = mysql(publisher, 3306)
+   myConnector.connect()
+   myConnector.deleteInstance(domain)
+   myConnector.disconnect()
+   return 0
+
+'''
 copyFromNAS(imageName, name, server) ---
     Expected action:
         This function should copy a file from the storage node
@@ -140,4 +166,5 @@ def copyFromNAS(imageName, name, server):
 client = ThunderRPC()
 client.registerEvent('INSTANTIATE', instantiate)
 client.registerEvent('DESTROY', destroy)
+client.registerEvent('DESTROYALL', destroyAll)
 client.findPublisher()
