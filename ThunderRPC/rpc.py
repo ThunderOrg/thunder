@@ -187,7 +187,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
             selectedNode = nodes[index]
             response = self.container.publishToHost(selectedNode, message,     \
                                                     False).split(':')
-            ip = networking.getIPFromDHCP(response[1])
+            ip = networking.getIPFromARP(response[1])
             myConnector.connect()
             myConnector.updateInstanceIP(response[2], ip)
             myConnector.disconnect()
@@ -207,6 +207,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
                response = self.container.publishToHost(nodeAddr, message) 
                if (response.split(':')[1] == 'error' and instance[1] != '-1'):
                   myConnector.deleteInstance(instance[0])
+                  print("instance failed", instance)
             instances = myConnector.getUserInstances(username)
             myConnector.disconnect()
             self.request.sendall(websock.encode(Opcode.text, username + ':' +  \
@@ -402,7 +403,6 @@ class RequestHandler(socketserver.BaseRequestHandler):
             self.request.sendall(self.container.role.encode('UTF8'))
 
         elif (data[0] == 'INSTANTIATE'):
-            print("INSTANTIATE TRADITIONAL")
             self.container.cleanupClients()
             nodes = clients.get('COMPUTE')
             # Message style:
@@ -428,8 +428,6 @@ class RequestHandler(socketserver.BaseRequestHandler):
             elif (self.lbMode == LBMode.RANDOM):
                selected = load_balancer.rand_select(load, vm)
 
-            print("SELECTED:",selected)
-
             if (selected == None):
                # Couldn't find a node to instantiate the vm
                self.request.sendall('-1'.encode('UTF8'))
@@ -441,9 +439,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
             selectedNode = nodes[index]
             response = self.container.publishToHost(selectedNode, message,     \
                                                     False).split(':')
-            print("RESPONSE:",response)
-            ip = networking.getIPFromDHCP(response[1])
-            print("IP:", ip)
+            ip = networking.getIPFromARP(response[1])
             myConnector.connect()
             myConnector.updateInstanceIP(response[2], ip)
             myConnector.disconnect()

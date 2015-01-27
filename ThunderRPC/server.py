@@ -54,12 +54,14 @@ def startVM(profile):
    vm = server.publishToHost(server.addr, 'INSTANTIATE ' + profile + ' admin', False)
    turnaround = round(time() * 1000) - begin
    vm = vm.split(':')
-   print(vm[1], " ", profile," (",total,") took ", turnaround, "ms to instantiate.", sep="")
-   lock.acquire()
-   total+=1
-   if (vm[1] != '-1'):
+   if (vm[1] == '-1'):
+      print(profile," (",total,") failed after ", turnaround, "ms.", sep="")
+   else:
+      print(profile," (",total,") took ", turnaround, "ms to instantiate.", sep="")
       success+=1
-   print("Total:", total, "Failed:", total - success)
+   total+=1
+   lock.acquire()
+   print("Total:", total, "Failed:", total-success)
    lock.release()
 
 # Instantiate NetEvent and register the invoke event
@@ -75,4 +77,4 @@ while(1):
       p = random.choice(profiles)
       t = threading.Thread(target=startVM, args=(p,))
       t.start()
-      sleep(1) 
+      sleep(2)

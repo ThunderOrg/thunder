@@ -13,7 +13,7 @@ Cloud and Cluster Computing Group
 import subprocess
 import shutil
 import fileinput
-from time import sleep
+from time import time, sleep
 
 '''
 getIP(interface) ---
@@ -138,8 +138,31 @@ def getIPFromDHCP(mac):
                result = line.split()[1]
                done = True
                break
-      sleep(10)
+      sleep(5)
    return result
+
+def getIPFromARP(mac):
+   mac = mac.replace('-', ':')
+   # Remove any previous entry for this mac address
+   print("MAC:", mac)
+   cmd = "/usr/sbin/arp -d `arp -an | grep " + mac + " | awk '{print $2}' | tr -d '()'`"
+   subprocess.call(cmd, shell=True)
+   cmd = "./iplookup.sh"
+   out = ""
+   start_time = int(round(time()*1000))
+   cur_time = start_time
+   max_time = constants.get('default.maxIPWait')
+
+   while (out == "" and start_time - cur_time < max_time):
+      p = subprocess.Popen([cmd, mac], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+      out, err = p.communicate()
+      out = out.decode().strip()
+      cur_time = int(round(time() * 1000))
+
+   if (out == ""):
+      return '-1'
+
+   return out
 
 def generatePreseed(ip):
    wwwDir = constants.get('default.wwwdir')
