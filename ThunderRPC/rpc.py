@@ -187,10 +187,13 @@ class RequestHandler(socketserver.BaseRequestHandler):
             selectedNode = nodes[index]
             response = self.container.publishToHost(selectedNode, message,     \
                                                     False).split(':')
-            ip = networking.getIPFromARP(response[1])
-            myConnector.connect()
-            myConnector.updateInstanceIP(response[2], ip)
-            myConnector.disconnect()
+            ip = '-1'
+            if (response[1] != ''):
+               ip = networking.getIPFromARP(response[1])
+               myConnector.connect()
+               myConnector.updateInstanceIP(response[2], ip)
+               myConnector.disconnect()
+
             self.request.sendall(websock.encode(Opcode.text, ip))
 
         # for debugging purposes, lets print out the data for all other cases
@@ -439,10 +442,13 @@ class RequestHandler(socketserver.BaseRequestHandler):
             selectedNode = nodes[index]
             response = self.container.publishToHost(selectedNode, message,     \
                                                     False).split(':')
-            ip = networking.getIPFromARP(response[1])
-            myConnector.connect()
-            myConnector.updateInstanceIP(response[2], ip)
-            myConnector.disconnect()
+            ip = '-1'
+            if (response[1] != ''):
+               ip = networking.getIPFromARP(response[1])
+               myConnector.connect()
+               myConnector.updateInstanceIP(response[2], ip)
+               myConnector.disconnect()
+
             self.request.sendall(ip.encode('UTF8'))
 
         # check if the caller is requesting a nonce for authorization
