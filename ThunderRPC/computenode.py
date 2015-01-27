@@ -117,7 +117,7 @@ destroyAll(*params) ---
         1 - unsuccessful
 '''
 def destroyAll(*params):
-   vmDestructor = subprocess.Popen('./destroyAll.sh',                 \        
+   vmDestructor = subprocess.Popen('./destroyAll.sh',                          \
                                    stdout=subprocess.PIPE)
    out, err = vmDestructor.communicate()
    if (err != ""):
