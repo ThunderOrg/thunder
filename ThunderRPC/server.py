@@ -16,9 +16,7 @@ import random
 import threading
 from time import time, sleep
 
-success=0
-total=0
-lock = threading.Lock()
+total = 0
 
 # Invoke a function and return the result.
 def invoke(*params):
@@ -48,21 +46,16 @@ def printTable(table):
    print('----------')
 
 def startVM(profile):
-   global success
    global total
    begin = round(time() * 1000)
    vm = server.publishToHost(server.addr, 'INSTANTIATE ' + profile + ' admin', False)
    turnaround = round(time() * 1000) - begin
    vm = vm.split(':')
-   if (vm[1] == '-1'):
-      print(profile," (",total,") failed after ", turnaround, "ms.", sep="")
+   if (vm[1] == ''):
+      print("VM " + str(total) + "\tFailed\t" + str(turnaround))
    else:
-      print(profile," (",total,") took ", turnaround, "ms to instantiate.", sep="")
-      success+=1
+      print("VM " + str(total) + "\tSuccess\t" + str(turnaround))
    total+=1
-   lock.acquire()
-   print("Total:", total, "Failed:", total-success)
-   lock.release()
 
 # Instantiate NetEvent and register the invoke event
 server = ThunderRPC(role = 'PUBLISHER', group = 'CONTROLLER')

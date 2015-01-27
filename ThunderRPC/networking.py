@@ -144,9 +144,8 @@ def getIPFromDHCP(mac):
 def getIPFromARP(mac):
    mac = mac.replace('-', ':')
    # Remove any previous entry for this mac address
-   print("MAC:", mac)
    cmd = "/usr/sbin/arp -d `arp -an | grep " + mac + " | awk '{print $2}' | tr -d '()'`"
-   subprocess.call(cmd, shell=True)
+   subprocess.call(cmd + " > /dev/null 2>&1", shell=True)
    cmd = "./iplookup.sh"
    out = ""
    start_time = int(round(time()*1000))
@@ -158,9 +157,6 @@ def getIPFromARP(mac):
       out, err = p.communicate()
       out = out.decode().strip()
       cur_time = int(round(time() * 1000))
-
-   if (out == ""):
-      return '-1'
 
    return out
 
