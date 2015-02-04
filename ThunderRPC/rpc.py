@@ -12,14 +12,13 @@ Cloud and Cluster Computing Group
 # Imports
 import auth, socket, socketserver, threading, libvirt, load_balancer 
 import subprocess, shutil, fileinput, networking, threading, os, urllib.request
-import concurrent.futures
+import threadpool
 from websocket import *
 from mysql_support import *
 from time import sleep
 from enum import Enum
 
 locks = [0] * 2048
-thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=20)
 
 class LBMode(Enum):
    RAIN=0
@@ -31,7 +30,7 @@ class LBMode(Enum):
 ThunderRPCServer(socketserver.ThreadingMixIn, socketserver.TCPServer) ---
 Dummy class used to ensure per-request threading
 '''
-class ThunderRPCServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+class ThunderRPCServer(threadpool.ThreadPoolMixIn, socketserver.TCPServer):
     pass
 
 '''
@@ -98,9 +97,9 @@ class RequestHandler(socketserver.BaseRequestHandler):
         # if there is data waiting to be processed then process it!
         if (decodedData != ''):
             if (ws):
-                thread_pool.submit(self.processWebsocketRequest, self.request, decodedData.split(), websock)
+                self.processWebsocketRequest(self.request, decodedData.split(), websock)
             else:
-                thread_pool.submit(self.processTraditionalRequest, self.request, decodedData.split())
+                self.processTraditionalRequest(self.request, decodedData.split())
         return
 
     '''
@@ -135,8 +134,9 @@ class RequestHandler(socketserver.BaseRequestHandler):
 
         # check if the client is requesting a list of clusters available
         elif (data[0] == 'GROUPNAMES'):
-            request.sendall(websock.encode(Opcode.text,                   \
-                                 self.container.getClusterList()))
+            result = websock.encode(Opcode.text,                   \
+                     self.container.getClusterList())
+            request.sendall(result)
 
         # check if the client is requesting a list of nodes in a particular
         # cluster

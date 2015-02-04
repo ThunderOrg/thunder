@@ -554,7 +554,6 @@ class ThunderRPC(threading.Thread):
     '''
     def run(self):
         self.running = True
-        while (self.running):
-            self._server.handle_request()
+        self._server.serve_forever()
         self._server.shutdown()
         return
