@@ -456,9 +456,6 @@ class RequestHandler(socketserver.BaseRequestHandler):
             load = [self.container.publishToHost(nodes[0], 'UTILIZATION')]
             for node in nodes[1:]:
                tmp = self.container.publishToHost(node, 'UTILIZATION')
-               print(len(tmp.split(':')))
-               while (len(tmp.split(':')) <= 1):
-                  tmp = self.container.publishToHost(node, 'UTILIZATION')
                load += [tmp]
 
             selected = None
