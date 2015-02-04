@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import random
 
 '''
 load_balancer.py
@@ -142,16 +143,22 @@ def rr_select(nodes, vm):
    global rr_index
    orig_index = rr_index
    retval = None
+   numResets=0
    while (1):
-      if (rr_index == orig_index):
+      if (rr_index > len(nodes)-1):
+         numResets += 1
+         rr_reset()
+
+      if (numResets>0 and orig_index == rr_index):
          break
+
       node = nodes[rr_index].split(':')
+
       if (fits(node, vm)):
          retval = node
          break
       rr_index += 1
-      if (rr_index > len(nodes)-1):
-         rr_reset()
+   rr_index += 1
    return retval
 
 '''
