@@ -6,7 +6,7 @@ class ThreadPoolMixIn(ThreadingMixIn):
     '''
     use a thread pool instead of a new thread on every request
     '''
-    numThreads = 100
+    numThreads = 512
     allow_reuse_address = True  # seems to fix socket.error on server restart
  
     def serve_forever(self):
@@ -16,7 +16,7 @@ class ThreadPoolMixIn(ThreadingMixIn):
         # set up the threadpool
         self.requests = Queue(self.numThreads)
  
-        for x in range(self.numThreads):
+        for i in range(self.numThreads):
             t = threading.Thread(target = self.process_request_thread)
             t.setDaemon(1)
             t.start()

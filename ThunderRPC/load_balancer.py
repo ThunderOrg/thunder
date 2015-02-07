@@ -152,6 +152,9 @@ def rr_select(nodes, vm):
       if (numResets>0 and orig_index == rr_index):
          break
 
+      if (rr_index < 0 or rr_index > len(nodes)):
+         return None
+
       node = nodes[rr_index].split(':')
 
       if (fits(node, vm)):

@@ -562,7 +562,24 @@ class RequestHandler(socketserver.BaseRequestHandler):
                if (not found):
                   response = 'SUBSCRIBE'
             request.sendall(response.encode('UTF8'))
-        
+
+        elif (data[0] == 'UPDATERAIN'):
+            myConnector = mysql(self.container.addr[0], 3306)
+            myConnector.connect()
+            myConnector.updateWeights('balance', data[1:])
+            myConnector.disconnect()
+            request.sendall('0'.encode('UTF8'))
+
+        elif (data[0] == 'CHANGELBMODE'):
+            mode = data[1]
+            try:
+               self.lbMode = LBMode[mode] 
+               fp = open('lb.conf', 'w')
+               fp.write(mode)
+               fp.close()
+            except:
+               print(mode,"is not a valid load balance mode.")
+
         # check if an instance is running
         elif (data[0] == 'CHECKINSTANCE'):
             virtcon = libvirt.openReadOnly(None)
