@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import random
+import threading
 
 '''
 load_balancer.py
@@ -13,6 +14,7 @@ Cloud and Cluster Computing Group
 # Get the default number of vcores allocated per physical core
 VCORES_PERCORE = constants.get('default.vcoresPerCore')
 rr_index=0
+rr_lock = threading.Lock()
 
 '''
 rain_select(nodes, weights, vm) ---
@@ -125,7 +127,9 @@ rr_reset() ---
 '''
 def rr_reset():
    global rr_index
+   rr_lock.acquire()
    rr_index=0
+   rr_lock.release()
 
 '''
 rr_select() ---
@@ -143,25 +147,25 @@ def rr_select(nodes, vm):
    global rr_index
    orig_index = rr_index
    retval = None
-   numResets=0
-   while (1):
+   touched = 0
+   while (touched < len(nodes)):
       if (rr_index > len(nodes)-1):
-         numResets += 1
          rr_reset()
 
-      if (numResets>0 and orig_index == rr_index):
-         break
-
-      if (rr_index < 0 or rr_index > len(nodes)):
-         return None
-
+      rr_lock.acquire()
       node = nodes[rr_index].split(':')
+      rr_lock.release()
+      touched += 1
 
       if (fits(node, vm)):
          retval = node
          break
+      rr_lock.acquire()
       rr_index += 1
+      rr_lock.release()
+   rr_lock.acquire()
    rr_index += 1
+   rr_lock.release()
    return retval
 
 '''
