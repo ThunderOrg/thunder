@@ -428,7 +428,7 @@ class ThunderRPC(threading.Thread):
                 print('Host', host[0] + ':' + str(host[1]),                    \
                       'didn\'t respond.  Trying again.')
             count += 1
-        return host[0] + ':timeout'
+        raise Exception("Timeout")
 
     '''
     publishToGroup() ---
