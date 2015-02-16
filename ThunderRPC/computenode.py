@@ -73,7 +73,7 @@ def instantiate(*params):
                                   stderr=subprocess.PIPE)
    out, err = virtHelper.communicate()
    mac = out.decode().rstrip().replace(':','-')
-   return createMessage(mac=mac. domain=domain)
+   return createMessage(mac=mac, domain=domain)
 
 '''
 destroy(*params) ---
