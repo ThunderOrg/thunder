@@ -79,8 +79,7 @@ class websocket:
       # 000 - 3 reserved bits
       # 0001 - Text opcode (UTF-8 encoded)
       # 129 in base10
-      header = pack('!B', ((1 << 7) | (0 << 6) | (0 << 5) | (0 << 4) |         \
-                           Opcode.text))
+      header = pack('!B', (128 | Opcode.text))
       payloadLen = len(encodedData)
       if (payloadLen < 126):
          header += pack('!B', payloadLen)
