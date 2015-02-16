@@ -30,9 +30,9 @@ def invoke(*params):
    if (len(data) > 1):
       if (data[0] == 'CONTROL'):
          if (data[1] == 'GET_CLIENT_LIST'):
-            return server.getClientList()
+            return createMessage(clients=server.getClientList())
          elif (data[1] == 'GET_CLUSTER_LIST'):
-            return server.getClusterList()
+            return createMessage(clusters=server.getClusterList())
       elif (data[0] == 'GROUP'):
          return server.publishToGroup(params[2], params[1])
       elif (data[0] == 'HOST'):

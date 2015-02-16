@@ -21,13 +21,13 @@ def importImage(*params):
    p = subprocess.Popen(['./getImage.sh', url, imageDir], stdout=subprocess.PIPE)
    out,err=p.communicate()
    if (err != ''):
-      return '1'
+      return createMessage(result=1)
    print(out)
    # Untar the image
    
    # Put the data from the YAML into the database
    # Store the image tar in the share
-   return '0'
+   return createMessage(result=0)
 
 client = ThunderRPC(group = 'STORAGE')
 client.registerEvent('IMPORTIMAGE', importImage)

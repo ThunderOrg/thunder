@@ -73,7 +73,7 @@ def instantiate(*params):
                                   stderr=subprocess.PIPE)
    out, err = virtHelper.communicate()
    mac = out.decode().rstrip().replace(':','-')
-   return mac + ':' + domain
+   return createMessage(mac=mac. domain=domain)
 
 '''
 destroy(*params) ---
@@ -95,13 +95,13 @@ def destroy(*params):
                                    stdout=subprocess.PIPE)
    out, err = vmDestructor.communicate()
    if (err != ""):
-      return 1
+      return createMessage(result=1)
    publisher = client.publisher[0]
    myConnector = mysql(publisher, 3306)
    myConnector.connect()
    myConnector.deleteInstance(domain)
    myConnector.disconnect()
-   return 0
+   return createMessage(result=0)
 
 '''
 destroyAll(*params) ---
@@ -121,13 +121,13 @@ def destroyAll(*params):
                                    stdout=subprocess.PIPE)
    out, err = vmDestructor.communicate()
    if (err != ""):
-      return 1
+      return createMessage(result=1)
    publisher = client.publisher[0]
    myConnector = mysql(publisher, 3306)
    myConnector.connect()
    myConnector.deleteInstance(domain)
    myConnector.disconnect()
-   return 0
+   return createMessage(result=0)
 
 '''
 copyFromNAS(imageName, name, server) ---

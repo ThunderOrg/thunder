@@ -14,6 +14,8 @@ import auth, socket, socketserver, threading, libvirt, load_balancer
 import subprocess, shutil, fileinput, networking, threading, os, urllib.request
 import threadpool
 from websocket import *
+from thunder import createMessage, parseMessage
+from thunder import createMessage, parseMessage
 from mysql_support import *
 from time import sleep
 from enum import Enum
@@ -96,10 +98,11 @@ class RequestHandler(socketserver.BaseRequestHandler):
 
         # if there is data waiting to be processed then process it!
         if (decodedData != ''):
+            decodedData = parseMessage(decodedData)
             if (ws):
-                self.processWebsocketRequest(self.request, decodedData.split(), websock)
+                self.processWebsocketRequest(self.request, decodedData, websock)
             else:
-                self.processTraditionalRequest(self.request, decodedData.split())
+                self.processTraditionalRequest(self.request, decodedData)
         return
 
     '''
