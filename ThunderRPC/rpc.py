@@ -119,52 +119,54 @@ class RequestHandler(socketserver.BaseRequestHandler):
     def processWebsocketRequest(self, request, data, websock):
         clients = self.container.clients
         # check if the client is requesting data from a group
-        if (data[0] == 'EXECGROUP'):
-            group = data[1]
-            res = self.container.publishToGroup(group, data[2])
+        if (data['cmd'] == 'EXECGROUP'):
+            group = data['group']
+            res = self.container.publishToGroup(group, data['remote_cmd'])
             if (res != None):
-                request.sendall(websock.encode(Opcode.text, res))
+                request.sendall(websock.encode(Opcode.text, res['result']))
 
         # check if the client is requesting data from a node
-        elif (data[0] == 'EXECNODE'):
-            node = (data[1], int(data[2]))
-            res = self.container.publishToHost(node, data[3])
+        elif (data['cmd'] == 'EXECNODE'):
+            node = (data['ip'], data['port'])
+            res = self.container.publishToHost(node, data['remote_cmd'])
             if (res != None):
-                request.sendall(websock.encode(Opcode.text, res))
+                request.sendall(websock.encode(Opcode.text, res['result']))
 
         # check if the client is requesting a list of clusters available
-        elif (data[0] == 'GROUPNAMES'):
-            result = websock.encode(Opcode.text,                   \
-                     self.container.getClusterList())
+        elif (data['cmd'] == 'GROUPNAMES'):
+            result = websock.encode(Opcode.text,                               \
+                     createMessage(clusters=self.container.getClusterList()))
             request.sendall(result)
 
         # check if the client is requesting a list of nodes in a particular
         # cluster
-        elif (data[0] == 'NODESINGROUP'):
-            clients = self.container.getClientList(data[1])
-            request.sendall(websock.encode(Opcode.text, clients))
+        elif (data['cmd'] == 'NODESINGROUP'):
+            clients = self.container.getClientList(data['cluster'])
+            msg = createMessage(clients=clients)
+            request.sendall(websock.encode(Opcode.text, msg))
 
         # check if the client is requesting the server to poll for mac
         # addresses, used for deployment
-        elif (data[0] == 'POLLMACS'):
+        elif (data['cmd'] == 'POLLMACS'):
             p = subprocess.Popen('./capturemacs.sh', stdout=subprocess.PIPE,   \
                                  stderr=subprocess.PIPE)
             out, err = p.communicate()
             macs = out.decode().rstrip().split('\n')
-            result = ''
+            result = []
             for mac in macs:
                 if (not mac.startswith(constants.get('default.vmMACPrefix'))):
-                    result+=mac.strip() + ';'
-            request.sendall(websock.encode(Opcode.text, result[:-1]))
+                    result+=[mac.strip()]
+            msg = createMessage(macs=result)
+            request.sendall(websock.encode(Opcode.text, msg))
 
-        elif (data[0] == 'INSTANTIATE'):
+        elif (data['cmd'] == 'INSTANTIATE'):
             global locks
             self.container.cleanupClients()
             nodes = clients.get('COMPUTE')
             
             # Message style:
             # INSTANTIATE <VM_NAME> <USER_NAME>
-            message = data[0] + ' ' + data[1] + ' ' + data[2]
+            message = createMessage(cmd=data[0], vm=data[1], user=data[2])
 
             if (self.lbMode == LBMode.CONSOLIDATE):
                weights = [0] * 5
@@ -178,13 +180,13 @@ class RequestHandler(socketserver.BaseRequestHandler):
             if (self.lbMode == LBMode.RAIN):
                while (1):
                   # [memTotal, memFree, 1min, 5min, 15min, maxVCore, activeVCore]
-                  load = [self.container.publishToHost(nodes[0], 'UTILIZATION')]
+                  load = [self.container.publishToHost(nodes[0], createMessage(cmd='UTILIZATION'))]
                   for node in nodes[1:]:
-                     load += [self.container.publishToHost(node, 'UTILIZATION')]
+                     load += [self.container.publishToHost(node, createMessage(cmd='UTILIZATION'))]
                   selected = load_balancer.rain_select(load, weights, vm)
                   if (selected == None):
                      # Couldn't find a node to instantiate the vm
-                     request.sendall(websock.encode(Opcode.text, ''))
+                     request.sendall(websock.encode(Opcode.text, createMessage(ip='')))
                      request.close()
                      return
 
@@ -223,11 +225,11 @@ class RequestHandler(socketserver.BaseRequestHandler):
             myConnector.connect()
             myConnector.updateInstanceIP(response[2], ip)
             myConnector.disconnect()
-            request.sendall(websock.encode(Opcode.text, ip))
+            request.sendall(websock.encode(Opcode.text, createMessage(ip=ip)))
 
         # for debugging purposes, lets print out the data for all other cases
-        elif (data[0] == 'GETUSERINSTANCES'):
-            username = data[1]
+        elif (data['cmd'] == 'GETUSERINSTANCES'):
+            username = data['user']
             myConnector = mysql(self.container.addr[0], 3306)
             myConnector.connect() 
             instances = myConnector.getUserInstances(username)
@@ -235,20 +237,20 @@ class RequestHandler(socketserver.BaseRequestHandler):
                node = myConnector.getNodeByName(instance[2]) 
                nodeAddr = node[1].split(':')
                nodeAddr = (nodeAddr[0],int(nodeAddr[1]))
-               message = 'CHECKINSTANCE ' + instance[0]
+               message = createMessage(cmd='CHECKINSTANCE', domain=instance[0])
                response = self.container.publishToHost(nodeAddr, message) 
-               if (response.split(':')[1] == 'error' and instance[1] != '-1'):
+               if (response['result'] == 'error' and instance[1] != '-1'):
                   myConnector.deleteInstance(instance[0])
             instances = myConnector.getUserInstances(username)
             myConnector.disconnect()
-            request.sendall(websock.encode(Opcode.text, username + ':' +  \
-                                 instances))
+            message = createMessage(user=username, instances=instances)
+            request.sendall(websock.encode(Opcode.text, message)) 
 
         # the user has requested that an instance be destroyed.
         # a message should be relayed to the node hosting the instance.
-        elif (data[0] == 'DESTROYINSTANCE'):
-            username = data[1]
-            domain = data[2]
+        elif (data['cmd'] == 'DESTROYINSTANCE'):
+            username = data['user']
+            domain = data['domain']
             myConnector = mysql(self.container.addr[0], 3306)
             myConnector.connect()
             instances = myConnector.getUserInstances(username)
@@ -258,27 +260,29 @@ class RequestHandler(socketserver.BaseRequestHandler):
                   node = myConnector.getNodeByName(instance[2])
                   nodeAddr = node[1].split(':')
                   nodeAddr = (nodeAddr[0],int(nodeAddr[1]))
-                  message = 'DESTROY ' + instance[0]
+                  message = createMessage(cmd='DESTROY', domain=instance[0])
                   self.container.publishToHost(nodeAddr, message)
                   result = 'success'
                   break
+            message = createMessage(result=result)
             myConnector.disconnect()
-            request.sendall(websock.encode(Opcode.text, result))
+            request.sendall(websock.encode(Opcode.text, message))
 
         # retrieve the RAIN constants from the database and send them to the
         # caller
-        elif (data[0] == 'RAINCONSTANTS'):
+        elif (data['cmd'] == 'RAINCONSTANTS'):
             myConnector = mysql(self.container.addr[0], 3306)
             myConnector.connect()
             weights = myConnector.getWeights('balance')
-            result = ''
+            result = []
             for weight in weights:
-               result += str(weight) + ';'
+               result += [weight]
             myConnector.disconnect()
-            request.sendall(websock.encode(Opcode.text, result[0:-1]))
+            message = createMessage(result=result)
+            request.sendall(websock.encode(Opcode.text, message))
 
-        elif (data[0] == 'CHANGELBMODE'):
-            mode = data[1]
+        elif (data['cmd'] == 'CHANGELBMODE'):
+            mode = data['mode']
             try:
                self.lbMode = LBMode[mode] 
                fp = open('lb.conf', 'w')
@@ -287,24 +291,25 @@ class RequestHandler(socketserver.BaseRequestHandler):
             except:
                print(mode,"is not a valid load balance mode.")
 
-        elif (data[0] == 'UPDATERAIN'):
+        elif (data['cmd'] == 'UPDATERAIN'):
             myConnector = mysql(self.container.addr[0], 3306)
             myConnector.connect()
-            myConnector.updateWeights('balance', data[1:])
+            myConnector.updateWeights('balance', data['weights'])
             myConnector.disconnect()
             request.sendall(websock.encode(Opcode.text, '0'))
 
-        elif (data[0] == 'IMAGELIST'):
+        elif (data['cmd'] == 'IMAGELIST'):
             myConnector = mysql(self.container.addr[0], 3306)
             myConnector.connect()
             images = myConnector.getImages()
             myConnector.disconnect()
-            result = ''
+            result = []
             for image in images:
-               result += image[0] + ';'
-            request.sendall(websock.encode(Opcode.text, result[0:-1]))
+               result += [image[0]]
+            message = createMessage(result=result)
+            request.sendall(websock.encode(Opcode.text, message))
 
-        elif (data[0] == 'SAVEPROFILE'):
+        elif (data['cmd'] == 'SAVEPROFILE'):
             #name = data[1]
             #title = data[2]
             #desc = data[3]
@@ -317,8 +322,8 @@ class RequestHandler(socketserver.BaseRequestHandler):
             #myConnector.disconnect()
             print(data)
 
-        elif (data[0] == 'IMPORTIMAGE'):
-            url = data[1]
+        elif (data['cmd'] == 'IMPORTIMAGE'):
+            url = data['url']
             myConnector = mysql(self.container.addr[0], 3306)
             myConnector.connect()
             storageNodes = myConnector.getStorageNodes()
@@ -326,22 +331,23 @@ class RequestHandler(socketserver.BaseRequestHandler):
             # Figure out what to do with multiple storage nodes
             nodeAddr = storageNodes[0][1].split(':')
             nodeAddr = (nodeAddr[0],int(nodeAddr[1]))
-            message = 'IMPORTIMAGE ' + url
+            message = createMessage(cmd='IMPORTIMAGE', url=url)
             res = self.container.publishToHost(nodeAddr, message, False)
 
-        elif (data[0] == 'PROFILEINFO'):
+        elif (data['cmd'] == 'PROFILEINFO'):
             myConnector = mysql(self.container.addr[0], 3306)
             myConnector.connect()
             profile = myConnector.getProfile(data[1])
             myConnector.disconnect()
-            result = ''
+            result = []
             for datum in profile:
-               result += str(datum) + ';'
-            request.sendall(websock.encode(Opcode.text, result[0:-1]))
+               result += [datum]
+            message = createMessage(result=result)
+            request.sendall(websock.encode(Opcode.text, message))
         
-        elif (data[0] == 'DEPLOY'):
-            role = data[1]
-            macs = data[2].split(';')[0:-1]
+        elif (data['cmd'] == 'DEPLOY'):
+            role = data['role']
+            macs = data['macs']
             for mac in macs:
                oldDHCPTime = networking.getDHCPRenewTime(mac)
                tftpDir = constants.get('default.tftpdir')
@@ -360,7 +366,8 @@ class RequestHandler(socketserver.BaseRequestHandler):
                t = threading.Thread(target = self.detectDHCPRenew,             \
                                     args = (mac, oldDHCPTime, ))
                t.start()
-            request.sendall(websock.encode(Opcode.text, '0'))
+            createMessage(result=1)
+            request.sendall(websock.encode(Opcode.text, message))
 
         else:
             print('DATA:',data)
@@ -419,14 +426,11 @@ class RequestHandler(socketserver.BaseRequestHandler):
         clients = self.container.clients
 
         # check if the request is an event call
-        if (events.contains(data[0])):
-            func = events.get(data[0])
-            params = []
-            for datum in data[1:]:
-                params += [datum]
+        if (events.contains(data['cmd'])):
+            func = events.get(data['cmd'])
 
             # call the function and get the result
-            response = str(func(data[0],params))
+            response = createMessage(result=func(data['cmd'],data['args']))
                
             if (response != None):
                 # send the result to the caller
@@ -434,15 +438,18 @@ class RequestHandler(socketserver.BaseRequestHandler):
 
         # check if the request is a query for the service role
         # (PUBLISHER | SUBSCRIBER)
-        elif (data[0] == 'ROLE'):
-            request.sendall(self.container.role.encode('UTF8'))
+        elif (data['cmd'] == 'ROLE'):
+            message = createMessage(role=self.container.role)
+            request.sendall(message.encode('UTF8'))
 
-        elif (data[0] == 'INSTANTIATE'):
+        elif (data['cmd'] == 'INSTANTIATE'):
             self.container.cleanupClients()
             nodes = clients.get('COMPUTE')
             # Message style:
             # INSTANTIATE <VM_NAME> <USER_NAME>
-            message = data[0] + ' ' + data[1] + ' ' + data[2]
+            message = createMessage(cmd=data[0], vm=data[1], user=data[2])
+            utilization = createMessage(cmd='UTILIZATION')
+            error = createMessage(ip=None)
 
             myConnector = mysql(self.container.addr[0], 3306)
             myConnector.connect()
@@ -452,10 +459,9 @@ class RequestHandler(socketserver.BaseRequestHandler):
                weights = myConnector.getWeights('balance')
             vm = myConnector.getProfileData(data[1])
             myConnector.disconnect()
-
-            load = [self.container.publishToHost(nodes[0], 'UTILIZATION')]
+            load = [self.container.publishToHost(nodes[0], utilization)]
             for node in nodes[1:]:
-               tmp = self.container.publishToHost(node, 'UTILIZATION')
+               tmp = self.container.publishToHost(node, utilization)
                load += [tmp]
 
             selected = None
@@ -466,7 +472,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
                   selected = load_balancer.rain_select(load, weights, vm)
                   if (selected == None):
                      # Couldn't find a node to instantiate the vm
-                     request.sendall(''.encode('UTF8'))
+                     request.sendall(error)
                      return
 
                   for i in range(0, len(nodes), 1):
@@ -474,7 +480,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
                         index = i
 
                   if (index == -1):
-                     request.sendall(''.encode('UTF8'))
+                     request.sendall(error)
                      return
 
                   if (locks[index] == 0):
@@ -482,15 +488,15 @@ class RequestHandler(socketserver.BaseRequestHandler):
                      break
                   else:
                      sleep(1)
-                     load = [self.container.publishToHost(nodes[0], 'UTILIZATION')]
+                     load = [self.container.publishToHost(nodes[0], utilization)]
                      for node in nodes[1:]:
-                        load += [self.container.publishToHost(node, 'UTILIZATION')]
+                        load += [self.container.publishToHost(node, utilization)]
 
             elif (self.lbMode == LBMode.ROUNDROBIN):
                selected = load_balancer.rr_select(load, vm)
                if (selected == None):
                   # Couldn't find a node to instantiate the vm
-                  request.sendall(''.encode('UTF8'))
+                  request.sendall(error)
                   return
 
                for i in range(0, len(nodes), 1):
@@ -501,7 +507,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
                selected = load_balancer.rand_select(load, vm)
                if (selected == None):
                   # Couldn't find a node to instantiate the vm
-                  request.sendall(''.encode('UTF8'))
+                  request.sendall(error)
                   return
 
                for i in range(0, len(nodes), 1):
@@ -509,7 +515,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
                      index = i
 
             if (index == -1):
-               request.sendall(''.encode('UTF8'))
+               request.sendall(error)
            
             selectedNode = nodes[index]
             response = self.container.publishToHost(selectedNode, message,     \
@@ -519,38 +525,38 @@ class RequestHandler(socketserver.BaseRequestHandler):
                locks[index] = 0
 
             ip = ''
-            if (response[1] != ''):
-               ip = networking.getIPFromARP(response[1])
+            if (response['mac'] != None):
+               ip = networking.getIPFromARP(response['mac'])
             myConnector.connect()
-            myConnector.updateInstanceIP(response[2], ip)
+            myConnector.updateInstanceIP(response['domain'], ip)
             myConnector.disconnect()
-            request.sendall(ip.encode('UTF8'))
+            request.sendall(createMessage(ip=ip))
 
         # check if the caller is requesting a nonce for authorization
-        elif (data[0] == 'AUTH'):
+        elif (data['cmd'] == 'AUTH'):
             nonce = auth.generateNonce()
             self.container._nonce = nonce
-            request.sendall(nonce.encode('UTF8'))
+            request.sendall(createMessage(nonce=nonce))
 
         # check if the caller is requesting authorization for subscription
-        elif (data[0] == 'SUBSCRIBE'):
-            r = data[4].encode('UTF8')
+        elif (data['cmd'] == 'SUBSCRIBE'):
+            r = data['result'].encode('UTF8')
             m = auth.decrypt(r).decode('UTF8')[1:].split(':')[1]
             if (m == self.container._nonce):
                 # we can consider this subscriber to be authentic
                 if (len(data) == 5): # should be 5 values
                     # data[3] is the group name
-                    if (clients.contains(data[3])):
-                        c = clients.get(data[3])
-                        c.append((data[1], int(data[2])))
+                    if (clients.contains(data['group'])):
+                        c = clients.get(data['group'])
+                        c.append((data['ip'], data['port']))
                     else:
-                        c = [(data[1], int(data[2]))]
-                        clients.append((data[3], c))
+                        c = [(data['ip'], int(data['port']))]
+                        clients.append((data['group'], c))
 
         # check if the caller is sending a heartbeat
-        elif (data[0] == 'HEARTBEAT'):
+        elif (data['cmd'] == 'HEARTBEAT'):
             # check if the client is still registered
-            response = data[0]
+            response = data['cmd']
             if (len(clients.collection()) == 0):
                response = 'SUBSCRIBE'
             else:
@@ -561,17 +567,19 @@ class RequestHandler(socketserver.BaseRequestHandler):
                         found = True
                if (not found):
                   response = 'SUBSCRIBE'
-            request.sendall(response.encode('UTF8'))
+            message = createMessage(result=response)
+            request.sendall(message)
 
-        elif (data[0] == 'UPDATERAIN'):
+        elif (data['cmd'] == 'UPDATERAIN'):
             myConnector = mysql(self.container.addr[0], 3306)
             myConnector.connect()
             myConnector.updateWeights('balance', data[1:])
             myConnector.disconnect()
-            request.sendall('0'.encode('UTF8'))
+            message = createMessage(result=0)
+            request.sendall(message)
 
-        elif (data[0] == 'CHANGELBMODE'):
-            mode = data[1]
+        elif (data['cmd'] == 'CHANGELBMODE'):
+            mode = data['mode']
             try:
                self.lbMode = LBMode[mode] 
                fp = open('lb.conf', 'w')
@@ -581,15 +589,17 @@ class RequestHandler(socketserver.BaseRequestHandler):
                print(mode,"is not a valid load balance mode.")
 
         # check if an instance is running
-        elif (data[0] == 'CHECKINSTANCE'):
+        elif (data['cmd'] == 'CHECKINSTANCE'):
             virtcon = libvirt.openReadOnly(None)
+            error = createMessage(result='error')
+            success = createMessage(result='success')
             if (virtcon == None):
-               request.sendall('error'.encode('UTF8'))
+               request.sendall(error)
             try:
-               virtcon.lookupByName(data[1])
-               request.sendall('success'.encode('UTF8'))
+               virtcon.lookupByName(data['domain'])
+               request.sendall(success)
             except:
-               request.sendall('error'.encode('UTF8'))
+               request.sendall(error)
             virtcon.close()
 
         else:

@@ -10,7 +10,7 @@ Cloud and Cluster Computing Group
 '''
 
 # Imports
-import auth, threading, socket, socketserver, sys, platform, struct, traceback
+import auth, threading, socket, socketserver, sys, platform, struct, json 
 from dictionary import *
 from websocket import *
 from mysql_support import mysql
@@ -27,6 +27,12 @@ parseConfig('thunder.conf')
 
 # default port of the server
 SERVER_PORT = constants.get('server.port')
+
+def createMessage(**kwargs):
+    return json.dumps(kwargs).encode('UTF8')
+
+def parseMessage(msg):
+    return json.loads(msg.decode('UTF8'))
 
 class ThunderRPC(threading.Thread):
     # local imports
@@ -414,7 +420,7 @@ class ThunderRPC(threading.Thread):
                 s.close()
                 # return a colon delimited string containing the IP address of
                 # the host and its response
-                return host[0]+':'+str(response)
+                return parseMessage(response)
             except:
                 print('Host', host[0] + ':' + str(host[1]),                    \
                       'didn\'t respond.  Trying again.')
@@ -441,15 +447,15 @@ class ThunderRPC(threading.Thread):
            by semicolons or None if nothing is returned.
     '''
     def publishToGroup(self, group, data, timeout = True):
-        ret = ''
+        ret = []
         if (self.clients.contains(group)):
             addresses = self.clients.get(group)
             for addr in addresses:
                 val = self.publishToHost(addr, data, timeout)
                 if (val != None):
-                    ret += val+';'
+                    ret += [val]
         if (len(ret) > 0):
-            return ret[:-1]
+            return ret
 
     '''
     registerEvent() ---
@@ -484,14 +490,20 @@ class ThunderRPC(threading.Thread):
     def registerClient(self, host, group):
         # send an authorization request to the server.  The server should
         # return a nonce value.
-        nonce = self.publishToHost(host, 'AUTH')
- 
+        ret = self.publishToHost(host, createMessage(cmd='AUTH'))
+        nonce = ret['nonce']
+
         # encrypt the nonce with pre-shared key and send it back to the host.
         decVal = auth.encrypt(nonce).decode('UTF8')
 
-        ret = self.publishToHost(host, 'SUBSCRIBE ' + self.addr[0] + ' ' +     \
-                                 str(self.addr[1]) + ' ' + self.group + ' ' +  \
-                                 decVal)
+        message = createMessage(cmd='SUBSCRIBE',
+                                ip=self.addr[0],
+                                port=self.addr[1],
+                                group=self.group,
+                                nonce=decVal)
+
+        # TODO: What to do with ret?
+        ret = self.publishToHost(host, message) 
 
         # save the IP of the publisher.
         self._publisher = host
@@ -527,15 +539,16 @@ class ThunderRPC(threading.Thread):
             self.findPublisher()
             return
 
+        message = createMessage(cmd='HEARTBEAT', ip=self.addr[0], port=self.addr[1])
         alive = True
         while (alive):
             sleep(constants.get('heartbeat.interval'))
-            ret = self.publishToHost(self._publisher, 'HEARTBEAT ' + str(self.addr[0]) + ' ' + str(self.addr[1]))
+            
+            ret = self.publishToHost(self._publisher, message) 
             if (ret == None):
                 alive = False
             else:
-                data = ret.split(':')
-                if (data[1] == 'SUBSCRIBE'):
+                if (ret['cmd'] == 'SUBSCRIBE'):
                     alive = False
         self.findPublisher()
         return
