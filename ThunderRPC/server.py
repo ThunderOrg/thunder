@@ -17,6 +17,7 @@ import threading
 from time import time, sleep
 import glob
 import os
+from message import createMessage
 
 failed = 0
 total = 0

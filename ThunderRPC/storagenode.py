@@ -12,6 +12,7 @@ Cloud and Cluster Computing Group
 # Imports
 import subprocess
 from thunder import *
+from message import createMessage
 
 def importImage(*params):
    args = params[1]
