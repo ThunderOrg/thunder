@@ -43,6 +43,11 @@ def invoke(*params):
    else:
       return None
 
+# Instantiate NetEvent and register the invoke event
+server = ThunderRPC(role = 'PUBLISHER', group = 'CONTROLLER')
+server.registerEvent('INVOKE', invoke)
+
+'''
 def printTable(direc,fname):
    table = server.publishToGroup('COMPUTE', 'UTILIZATION')
    for machine in table.split(';'):
@@ -65,9 +70,6 @@ def startVM(profile,direc,fname):
    total += 1
    lock.release()
 
-# Instantiate NetEvent and register the invoke event
-server = ThunderRPC(role = 'PUBLISHER', group = 'CONTROLLER')
-server.registerEvent('INVOKE', invoke)
 
 def print_to_file(*data, sepa=' '):
    direc = data[0]
@@ -135,3 +137,4 @@ while(1):
             server.publishToGroup('COMPUTE', 'DESTROYALL')
             sleep(60)
          i -= 5
+'''
