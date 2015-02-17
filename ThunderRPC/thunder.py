@@ -543,7 +543,7 @@ class ThunderRPC(threading.Thread):
             if (ret == None):
                 alive = False
             else:
-                if (ret['cmd'] == 'SUBSCRIBE'):
+                if (ret['result'] == 'SUBSCRIBE'):
                     alive = False
         self.findPublisher()
         return

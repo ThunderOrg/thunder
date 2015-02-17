@@ -515,7 +515,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
                found = False
                for group in clients.collection():
                   for ip in clients.get(group):
-                     if (ip[0] == data[1] and str(ip[1]) == data[2]):
+                     if (ip[0] == data['ip'] and ip[1] == data['port']):
                         found = True
                if (not found):
                   response = 'SUBSCRIBE'
