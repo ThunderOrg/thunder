@@ -72,7 +72,7 @@ class websocket:
    # Wrap data inside of a hybi-13 websocket frame.  Does not require masking
    # from server->client.
    def encode(self, opcode, data):
-      encodedData = data.encode('UTF8')
+      encodedData = data
 
       # Header will be 10000001
       # 1 - Finalize bit (we wont have a message that exceeds 126 characters)

@@ -14,8 +14,7 @@ import auth, socket, socketserver, threading, libvirt, load_balancer
 import subprocess, shutil, fileinput, networking, threading, os, urllib.request
 import threadpool
 from websocket import *
-from thunder import createMessage, parseMessage
-from thunder import createMessage, parseMessage
+from message import createMessage, parseMessage
 from mysql_support import *
 from time import sleep
 from enum import Enum
@@ -124,16 +123,20 @@ class RequestHandler(socketserver.BaseRequestHandler):
         # check if the client is requesting data from a group
         if (data['cmd'] == 'EXECGROUP'):
             group = data['group']
-            res = self.container.publishToGroup(group, data['remote_cmd'])
+            message = createMessage(cmd=data['remote_cmd'], args=data['remote_args'])
+            res = self.container.publishToGroup(group, message)
+            result = createMessage(result=res['result'])
             if (res != None):
-                request.sendall(websock.encode(Opcode.text, res['result']))
+                request.sendall(websock.encode(Opcode.text, result))
 
         # check if the client is requesting data from a node
         elif (data['cmd'] == 'EXECNODE'):
-            node = (data['ip'], data['port'])
-            res = self.container.publishToHost(node, data['remote_cmd'])
+            node = (data['ip'], int(data['port']))
+            message = createMessage(cmd=data['remote_cmd'], args=data['remote_args'])
+            res = self.container.publishToHost(node, message)
+            result = createMessage(result=res['result'])
             if (res != None):
-                request.sendall(websock.encode(Opcode.text, res['result']))
+                request.sendall(websock.encode(Opcode.text, result))
 
         # check if the client is requesting a list of clusters available
         elif (data['cmd'] == 'GROUPNAMES'):
@@ -163,74 +166,95 @@ class RequestHandler(socketserver.BaseRequestHandler):
             request.sendall(websock.encode(Opcode.text, msg))
 
         elif (data['cmd'] == 'INSTANTIATE'):
-            global locks
             self.container.cleanupClients()
             nodes = clients.get('COMPUTE')
-            
             # Message style:
             # INSTANTIATE <VM_NAME> <USER_NAME>
             message = createMessage(cmd=data[0], vm=data[1], user=data[2])
+            utilization = createMessage(cmd='UTILIZATION')
+            error = createMessage(ip=None)
 
+            myConnector = mysql(self.container.addr[0], 3306)
+            myConnector.connect()
             if (self.lbMode == LBMode.CONSOLIDATE):
                weights = [0] * 5
             elif (self.lbMode == LBMode.RAIN):
-               myConnector = mysql(self.container.addr[0], 3306)
-               myConnector.connect()
                weights = myConnector.getWeights('balance')
-               vm = myConnector.getProfileData(data[1])
-               myConnector.disconnect()
+            vm = myConnector.getProfileData(data[1])
+            myConnector.disconnect()
+            load = [self.container.publishToHost(nodes[0], utilization)]
+            for node in nodes[1:]:
+               tmp = self.container.publishToHost(node, utilization)
+               load += [tmp]
 
-            if (self.lbMode == LBMode.RAIN):
+            selected = None
+            index = -1
+            if (self.lbMode == LBMode.RAIN or self.lbMode == LBMode.CONSOLIDATE):
                while (1):
                   # [memTotal, memFree, 1min, 5min, 15min, maxVCore, activeVCore]
-                  load = [self.container.publishToHost(nodes[0], createMessage(cmd='UTILIZATION'))]
-                  for node in nodes[1:]:
-                     load += [self.container.publishToHost(node, createMessage(cmd='UTILIZATION'))]
                   selected = load_balancer.rain_select(load, weights, vm)
                   if (selected == None):
                      # Couldn't find a node to instantiate the vm
-                     request.sendall(websock.encode(Opcode.text, createMessage(ip='')))
-                     request.close()
+                     request.sendall(websock.encode(Opcode.text, error))
                      return
 
-                  index = -1
                   for i in range(0, len(nodes), 1):
                      if (nodes[i][0] == selected[0]):
                         index = i
+
+                  if (index == -1):
+                     request.sendall(websock.encode(Opcode.text, error))
+                     return
 
                   if (locks[index] == 0):
                      locks[index] = 1
                      break
                   else:
                      sleep(1)
-                     continue
+                     load = [self.container.publishToHost(nodes[0], utilization)]
+                     for node in nodes[1:]:
+                        load += [self.container.publishToHost(node, utilization)]
 
             elif (self.lbMode == LBMode.ROUNDROBIN):
                selected = load_balancer.rr_select(load, vm)
+               if (selected == None):
+                  # Couldn't find a node to instantiate the vm
+                  request.sendall(websock.encode(Opcode.text, error))
+                  return
+
                for i in range(0, len(nodes), 1):
                   if (nodes[i][0] == selected[0]):
                      index = i
 
             elif (self.lbMode == LBMode.RANDOM):
                selected = load_balancer.rand_select(load, vm)
+               if (selected == None):
+                  # Couldn't find a node to instantiate the vm
+                  request.sendall(websock.encode(Opcode.text, error))
+                  return
+
                for i in range(0, len(nodes), 1):
                   if (nodes[i][0] == selected[0]):
                      index = i
-    
+
+            if (index == -1):
+               request.sendall(websock.encode(Opcode.text, error))
+           
             selectedNode = nodes[index]
             response = self.container.publishToHost(selectedNode, message,     \
                                                     False).split(':')
-            locks[index] = 0
+
+            if (self.lbMode == LBMode.RAIN or self.lbMode == LBMode.CONSOLIDATE):
+               locks[index] = 0
 
             ip = ''
-            if (response[1] != ''):
-               ip = networking.getIPFromARP(response[1])
+            if (response['mac'] != None):
+               ip = networking.getIPFromARP(response['mac'])
             myConnector.connect()
-            myConnector.updateInstanceIP(response[2], ip)
+            myConnector.updateInstanceIP(response['domain'], ip)
             myConnector.disconnect()
             request.sendall(websock.encode(Opcode.text, createMessage(ip=ip)))
 
-        # for debugging purposes, lets print out the data for all other cases
         elif (data['cmd'] == 'GETUSERINSTANCES'):
             username = data['user']
             myConnector = mysql(self.container.addr[0], 3306)
@@ -284,6 +308,19 @@ class RequestHandler(socketserver.BaseRequestHandler):
             message = createMessage(result=result)
             request.sendall(websock.encode(Opcode.text, message))
 
+        elif (data['cmd'] == 'GETLBMODE'):
+            try:
+               fp = open('lb.conf', 'r')
+               mode = fp.read()
+               fp.close()
+               message = createMessage(lbmode=mode);
+            except:
+               fp = open('lb.conf', 'w')
+               fp.write("RAIN")
+               fp.close()
+               message = createMessage(lbmode="RAIN");
+            request.sendall(websock.encode(Opcode.text, message))
+
         elif (data['cmd'] == 'CHANGELBMODE'):
             mode = data['mode']
             try:
@@ -292,14 +329,16 @@ class RequestHandler(socketserver.BaseRequestHandler):
                fp.write(mode)
                fp.close()
             except:
+               raise
                print(mode,"is not a valid load balance mode.")
 
         elif (data['cmd'] == 'UPDATERAIN'):
             myConnector = mysql(self.container.addr[0], 3306)
             myConnector.connect()
-            myConnector.updateWeights('balance', data['weights'])
+            myConnector.updateWeights('balance', data['constants'])
             myConnector.disconnect()
-            request.sendall(websock.encode(Opcode.text, '0'))
+            # TODO: Failutes?
+            request.sendall(websock.encode(Opcode.text, createMessage(result=0)))
 
         elif (data['cmd'] == 'IMAGELIST'):
             myConnector = mysql(self.container.addr[0], 3306)
@@ -340,7 +379,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
         elif (data['cmd'] == 'PROFILEINFO'):
             myConnector = mysql(self.container.addr[0], 3306)
             myConnector.connect()
-            profile = myConnector.getProfile(data[1])
+            profile = myConnector.getProfile(data['profile'])
             myConnector.disconnect()
             result = []
             for datum in profile:
@@ -433,107 +472,16 @@ class RequestHandler(socketserver.BaseRequestHandler):
             func = events.get(data['cmd'])
 
             # call the function and get the result
-            response = createMessage(result=func(data['cmd'],data['args']))
-               
+            response = func(data['cmd'],data['args'])
             if (response != None):
                 # send the result to the caller
-                request.sendall(response.encode('UTF8'))
+                request.sendall(response)
 
         # check if the request is a query for the service role
         # (PUBLISHER | SUBSCRIBER)
         elif (data['cmd'] == 'ROLE'):
             message = createMessage(role=self.container.role)
             request.sendall(message.encode('UTF8'))
-
-        elif (data['cmd'] == 'INSTANTIATE'):
-            self.container.cleanupClients()
-            nodes = clients.get('COMPUTE')
-            # Message style:
-            # INSTANTIATE <VM_NAME> <USER_NAME>
-            message = createMessage(cmd=data[0], vm=data[1], user=data[2])
-            utilization = createMessage(cmd='UTILIZATION')
-            error = createMessage(ip=None)
-
-            myConnector = mysql(self.container.addr[0], 3306)
-            myConnector.connect()
-            if (self.lbMode == LBMode.CONSOLIDATE):
-               weights = [0] * 5
-            elif (self.lbMode == LBMode.RAIN):
-               weights = myConnector.getWeights('balance')
-            vm = myConnector.getProfileData(data[1])
-            myConnector.disconnect()
-            load = [self.container.publishToHost(nodes[0], utilization)]
-            for node in nodes[1:]:
-               tmp = self.container.publishToHost(node, utilization)
-               load += [tmp]
-
-            selected = None
-            index = -1
-            if (self.lbMode == LBMode.RAIN or self.lbMode == LBMode.CONSOLIDATE):
-               while (1):
-                  # [memTotal, memFree, 1min, 5min, 15min, maxVCore, activeVCore]
-                  selected = load_balancer.rain_select(load, weights, vm)
-                  if (selected == None):
-                     # Couldn't find a node to instantiate the vm
-                     request.sendall(error)
-                     return
-
-                  for i in range(0, len(nodes), 1):
-                     if (nodes[i][0] == selected[0]):
-                        index = i
-
-                  if (index == -1):
-                     request.sendall(error)
-                     return
-
-                  if (locks[index] == 0):
-                     locks[index] = 1
-                     break
-                  else:
-                     sleep(1)
-                     load = [self.container.publishToHost(nodes[0], utilization)]
-                     for node in nodes[1:]:
-                        load += [self.container.publishToHost(node, utilization)]
-
-            elif (self.lbMode == LBMode.ROUNDROBIN):
-               selected = load_balancer.rr_select(load, vm)
-               if (selected == None):
-                  # Couldn't find a node to instantiate the vm
-                  request.sendall(error)
-                  return
-
-               for i in range(0, len(nodes), 1):
-                  if (nodes[i][0] == selected[0]):
-                     index = i
-
-            elif (self.lbMode == LBMode.RANDOM):
-               selected = load_balancer.rand_select(load, vm)
-               if (selected == None):
-                  # Couldn't find a node to instantiate the vm
-                  request.sendall(error)
-                  return
-
-               for i in range(0, len(nodes), 1):
-                  if (nodes[i][0] == selected[0]):
-                     index = i
-
-            if (index == -1):
-               request.sendall(error)
-           
-            selectedNode = nodes[index]
-            response = self.container.publishToHost(selectedNode, message,     \
-                                                    False).split(':')
-
-            if (self.lbMode == LBMode.RAIN or self.lbMode == LBMode.CONSOLIDATE):
-               locks[index] = 0
-
-            ip = ''
-            if (response['mac'] != None):
-               ip = networking.getIPFromARP(response['mac'])
-            myConnector.connect()
-            myConnector.updateInstanceIP(response['domain'], ip)
-            myConnector.disconnect()
-            request.sendall(createMessage(ip=ip))
 
         # check if the caller is requesting a nonce for authorization
         elif (data['cmd'] == 'AUTH'):
@@ -543,8 +491,8 @@ class RequestHandler(socketserver.BaseRequestHandler):
 
         # check if the caller is requesting authorization for subscription
         elif (data['cmd'] == 'SUBSCRIBE'):
-            r = data['result'].encode('UTF8')
-            m = auth.decrypt(r).decode('UTF8')[1:].split(':')[1]
+            r = data['nonce'].encode('UTF8')
+            m = auth.decrypt(r).decode('UTF8')
             if (m == self.container._nonce):
                 # we can consider this subscriber to be authentic
                 if (len(data) == 5): # should be 5 values
@@ -555,6 +503,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
                     else:
                         c = [(data['ip'], int(data['port']))]
                         clients.append((data['group'], c))
+            request.sendall(createMessage(result=0)) 
 
         # check if the caller is sending a heartbeat
         elif (data['cmd'] == 'HEARTBEAT'):

@@ -10,7 +10,8 @@ Cloud and Cluster Computing Group
 '''
 
 # Imports
-import auth, threading, socket, socketserver, sys, platform, struct, json 
+import auth, threading, socket, socketserver, sys, platform, struct 
+from message import *
 from dictionary import *
 from websocket import *
 from mysql_support import mysql
@@ -27,15 +28,6 @@ parseConfig('thunder.conf')
 
 # default port of the server
 SERVER_PORT = constants.get('server.port')
-
-def createMessage(**kwargs):
-    return json.dumps(kwargs).encode('UTF8')
-
-def parseMessage(msg):
-    if (type(msg) == type(bytes())):
-       return json.loads(msg.decode('UTF8'))
-    else:
-       return json.loads(msg)
 
 class ThunderRPC(threading.Thread):
     # local imports
@@ -210,14 +202,14 @@ class ThunderRPC(threading.Thread):
            None
 
         Expected return value:
-           A semicolon delimeted string of cluster/group names
+           An array of cluster/group names
     '''
     def getClusterList(self):
-        ret = ''
+        ret = []
         self.cleanupClients()
         for cluster in self.clients.collection():
-           ret += cluster + ';'
-        return ret[:-1].strip()
+           ret += [cluster]
+        return ret
 
     '''
     getClientList(group) ---
@@ -229,15 +221,15 @@ class ThunderRPC(threading.Thread):
            group - The name of a group
 
         Expected return value:
-           A semicolon delimeted string of client IP/port
+           An array of client IP/port
     '''
     def getClientList(self, group):
         listString = ''
-        clist = ''
+        clist = []
         self.cleanupClients()
         for client in self.clients.get(group):
-           clist += client[0] + ':' + str(client[1]) + ';';
-        return clist[:-1].strip()
+           clist += [client[0] + ':' + str(client[1])];
+        return clist
 
     '''
     cleanupClients() ---
@@ -417,7 +409,7 @@ class ThunderRPC(threading.Thread):
                     s.settimeout(None)
                 s.connect(host)
                 # encode the data before sending
-                s.send(data.encode('UTF8'))
+                s.send(data)
                 # wait for a response from the host
                 response = s.recv(1024).decode()
                 s.close()
@@ -449,7 +441,7 @@ class ThunderRPC(threading.Thread):
            The responses from the nodes in the group separated 
            by semicolons or None if nothing is returned.
     '''
-    def publishToGroup(self, group, data, timeout = True):
+    def publishToGroup(self, group, data, timeout = False):
         ret = []
         if (self.clients.contains(group)):
             addresses = self.clients.get(group)

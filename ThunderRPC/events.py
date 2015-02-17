@@ -13,6 +13,7 @@ Cloud and Cluster Computing Group
 import os
 import platform
 import libvirt
+from message import * 
 
 '''
 utilization(*params) ---
@@ -57,9 +58,8 @@ def utilization(*params):
       activeVCores += int(dom.info()[3])
    conn.close()
 
-   retVal = memtotal + ':' + memfree + ':' + oneMin + ':' + fiveMin + ':' \
-                     + fifteenMin + ':' + str(num_proc) + ':' \
-                     + str(activeVCores)
+   retVal = createMessage(result=[memtotal,memfree,oneMin,fiveMin,
+                          fifteenMin,str(num_proc),str(activeVCores)])
 
    return retVal
 
@@ -85,5 +85,5 @@ def sysInfo(*params):
    kernel = os.uname()[2]
    arch = os.uname()[4]
 
-   retVal = shortOsName + ' (' + fullOsName + '):' + kernel + ':' + arch
+   retVal = createMessage(result=[shortOsName, fullOsName, kernel, arch])
    return retVal
