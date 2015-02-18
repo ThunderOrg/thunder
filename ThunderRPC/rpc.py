@@ -247,8 +247,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
                request.sendall(websock.encode(Opcode.text, error))
            
             selectedNode = nodes[index]
-            response = self.container.publishToHost(selectedNode, message,     \
-                                                    False).split(':')
+            response = self.container.publishToHost(selectedNode, message, False)
 
             if (self.lbMode == LBMode.RAIN or self.lbMode == LBMode.CONSOLIDATE):
                locks[index] = 0
@@ -624,8 +623,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
                request.sendall(error)
            
             selectedNode = nodes[index]
-            response = self.container.publishToHost(selectedNode, message,     \
-                                                    False).split(':')
+            response = self.container.publishToHost(selectedNode, message, False)
 
             if (self.lbMode == LBMode.RAIN or self.lbMode == LBMode.CONSOLIDATE):
                locks[index] = 0
