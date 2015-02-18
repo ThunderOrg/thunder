@@ -412,11 +412,13 @@ class ThunderRPC(threading.Thread):
                 s.send(data)
                 # wait for a response from the host
                 response = s.recv(1024).decode()
+                print(response)
                 s.close()
                 # return a colon delimited string containing the IP address of
                 # the host and its response
                 return parseMessage(response)
             except:
+                raise
                 print('Host', host[0] + ':' + str(host[1]),                    \
                       'didn\'t respond.  Trying again.')
             count += 1
@@ -539,7 +541,10 @@ class ThunderRPC(threading.Thread):
         while (alive):
             sleep(constants.get('heartbeat.interval'))
             
-            ret = self.publishToHost(self._publisher, message) 
+            try:
+               ret = self.publishToHost(self._publisher, message)
+            except:
+               continue
             if (ret == None):
                 alive = False
             else:

@@ -47,10 +47,9 @@ def invoke(*params):
 server = ThunderRPC(role = 'PUBLISHER', group = 'CONTROLLER')
 server.registerEvent('INVOKE', invoke)
 
-'''
 def printTable(direc,fname):
-   table = server.publishToGroup('COMPUTE', 'UTILIZATION')
-   for machine in table.split(';'):
+   table = server.publishToGroup('COMPUTE', createMessage(cmd='UTILIZATION'))
+   for machine in table['result']:
       m = machine.split(':')
       print_to_file(direc,fname, m[0].split('.')[-1],round(float(m[1])/(1024*1024),2),round(float(m[2])/(1024*1024),2),m[3],m[4],m[5],m[6],m[7],sepa="\t")
 
@@ -58,7 +57,7 @@ def startVM(profile,direc,fname):
    global total
    global failed
    begin = round(time() * 1000)
-   vm = server.publishToHost(server.addr, 'INSTANTIATE ' + profile + ' admin', False)
+   vm = server.publishToHost(server.addr, createMessage(cmd='INSTANTIATE', vm=profile, user='admin'), False)
    turnaround = round(time() * 1000) - begin
    vm = vm.split(':')
    lock.acquire()
@@ -86,15 +85,15 @@ while(1):
    for fname in glob.glob('*.in'): 
       fp = open(fname, 'r')
       if (fname == 'random.in'):
-         server.publishToHost(server.addr, 'CHANGELBMODE RANDOM', False)    
+         server.publishToHost(server.addr, createMessage(cmd="CHANGELBMODE", mode="RANDOM"), False)    
       elif (fname == 'rr.in'):
-         server.publishToHost(server.addr, 'CHANGELBMODE ROUNDROBIN', False)    
+         server.publishToHost(server.addr, createMessage(cmd="CHANGELBMODE", mode="ROUNDROBIN"), False)    
       elif (fname == 'noemph.in'):
-         server.publishToHost(server.addr, 'CHANGELBMODE CONSOLIDATE', False)    
+         server.publishToHost(server.addr, createMessage(cmd="CHANGELBMODE", mode="CONSOLIDATE"), False)    
       else:
          constants = ' '.join(map(lambda x: str(int(float(x)*100)),fp.read().split()))
-         server.publishToHost(server.addr, 'UPDATERAIN ' + constants, False)    
-         server.publishToHost(server.addr, 'CHANGELBMODE RAIN', False)    
+         server.publishToHost(server.addr, createMessage(cmd="CHANGELBMODE", mode="RAIN"), False)    
+         server.publishToHost(server.addr, createMessage(cmd="UPDATERAIN", constants=constants.split()), False)    
       fp.close()
 
       if not os.path.exists("./tests/" + fname + "/"):
@@ -134,7 +133,6 @@ while(1):
 
             printTable(fname,"RESTART_AFTER_"+str(i)+"_"+str(x))
             sleep(2)
-            server.publishToGroup('COMPUTE', 'DESTROYALL')
+            server.publishToGroup('COMPUTE', createMessage(cmd='DESTROYALL'))
             sleep(60)
          i -= 5
-'''

@@ -175,3 +175,8 @@ def generatePreseed(ip):
             print(line.replace('<ROLE>', config).replace('<SERVER_IP>', ip), end='')
          else:
             print(line, end='')
+   shutil.chown(wwwDir + '/preseed_compute.cfg', user='thunder', group='thunder')
+   shutil.chown(wwwDir + '/preseed_storage.cfg', user='thunder', group='thunder')
+   shutil.chown(wwwDir + '/preseed_bare.cfg', user='thunder', group='thunder')
+   shutil.chown(wwwDir + '/preseed_controller.cfg', user='thunder', group='thunder')
+

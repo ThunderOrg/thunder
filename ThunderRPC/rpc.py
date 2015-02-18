@@ -19,7 +19,7 @@ from mysql_support import *
 from time import sleep
 from enum import Enum
 
-locks = [0] * 2048
+locks = [0] * 5
 
 class LBMode(Enum):
    RAIN=0
@@ -28,7 +28,7 @@ class LBMode(Enum):
    RANDOM=3
 
 '''
-ThunderRPCServer(socketserver.ThreadingMixIn, socketserver.TCPServer) ---
+ThunderRPCServer(ThreadPoolMixIn, TCPServer) ---
 Dummy class used to ensure per-request threading
 '''
 class ThunderRPCServer(threadpool.ThreadPoolMixIn, socketserver.TCPServer):
@@ -40,6 +40,7 @@ Each request should be given an independent thread, each handled by
 the RequestHandler class
 '''
 class RequestHandler(socketserver.BaseRequestHandler):
+
     '''
     setup() ---
         Expected action:
@@ -63,6 +64,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
         except:
            self.lbMode = LBMode.RAIN
         return
+
     '''
     handle() ---
         Expected action:
@@ -206,6 +208,10 @@ class RequestHandler(socketserver.BaseRequestHandler):
                      request.sendall(websock.encode(Opcode.text, error))
                      return
 
+                  # If we don't have enough locks, double it
+                  if (index > len(locks)):
+                     locks += [0] * len(locks) 
+
                   if (locks[index] == 0):
                      locks[index] = 1
                      break
@@ -331,6 +337,8 @@ class RequestHandler(socketserver.BaseRequestHandler):
             except:
                raise
                print(mode,"is not a valid load balance mode.")
+            message = createMessage(result=0)
+            request.sendall(websock.encode(Opcode.text, message))
 
         elif (data['cmd'] == 'UPDATERAIN'):
             myConnector = mysql(self.container.addr[0], 3306)
@@ -411,6 +419,12 @@ class RequestHandler(socketserver.BaseRequestHandler):
             createMessage(result=1)
             request.sendall(websock.encode(Opcode.text, message))
 
+        elif (data['cmd'] == "REBOOTNODE"):
+            p = subprocess.Popen(['sudo','reboot'], stdout=subprocess.PIPE,             \
+                                 stderr=subprocess.PIPE)
+            out = p.communicate()
+            print(out)
+            
         else:
             print('DATA:',data)
 
