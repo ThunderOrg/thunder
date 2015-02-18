@@ -49,8 +49,10 @@ server.registerEvent('INVOKE', invoke)
 
 def printTable(direc,fname):
    table = server.publishToGroup('COMPUTE', createMessage(cmd='UTILIZATION'))
-   for machine in table['result']:
-      m = machine.split(':')
+   for machine in table:
+      print(machine)
+      m = machine['result']
+      print(m)
       print_to_file(direc,fname, m[0].split('.')[-1],round(float(m[1])/(1024*1024),2),round(float(m[2])/(1024*1024),2),m[3],m[4],m[5],m[6],m[7],sepa="\t")
 
 def startVM(profile,direc,fname):
@@ -59,9 +61,8 @@ def startVM(profile,direc,fname):
    begin = round(time() * 1000)
    vm = server.publishToHost(server.addr, createMessage(cmd='INSTANTIATE', vm=profile, user='admin'), False)
    turnaround = round(time() * 1000) - begin
-   vm = vm.split(':')
    lock.acquire()
-   if (vm[1] == ''):
+   if (vm['ip'] == None):
       print_to_file(direc,fname, "VM" + str(total) + "\t\tFailed\t\t" + str(turnaround))
       failed += 1
    else:

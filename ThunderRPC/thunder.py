@@ -416,8 +416,11 @@ class ThunderRPC(threading.Thread):
                 # return a colon delimited string containing the IP address of
                 # the host and its response
                 if (response == None):
-                   return 0
-                return parseMessage(response)
+                   ret = {}
+                else:
+                   ret = parseMessage(response)
+                ret['_HOST_'] = host
+                return ret
             except:
                 raise
                 print('Host', host[0] + ':' + str(host[1]),                    \
