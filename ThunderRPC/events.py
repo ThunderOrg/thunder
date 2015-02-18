@@ -59,7 +59,7 @@ def utilization(*params):
    conn.close()
 
    retVal = [memtotal,memfree,oneMin,fiveMin,                                  \
-             fteenMin,str(num_proc),str(activeVCores)]
+             fifteenMin,str(num_proc),str(activeVCores)]
 
    return retVal
 
