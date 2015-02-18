@@ -485,11 +485,13 @@ class RequestHandler(socketserver.BaseRequestHandler):
         if (events.contains(data['cmd'])):
             func = events.get(data['cmd'])
 
-            # call the function and get the result
-            response = func(data['cmd'],data['args'])
-            if (response != None):
-                # send the result to the caller
-                request.sendall(response)
+            if ('args' in data):
+               # call the function and get the result
+               response = func(data['cmd'],data['args'])
+            else:
+               response = func(data['cmd'],[])
+            # send the result to the caller
+            request.sendall(response)
 
         # check if the request is a query for the service role
         # (PUBLISHER | SUBSCRIBER)
@@ -553,6 +555,8 @@ class RequestHandler(socketserver.BaseRequestHandler):
                fp.close()
             except:
                print(mode,"is not a valid load balance mode.")
+            message = createMessage(result=0)
+            request.sendall(message)
 
         # check if an instance is running
         elif (data['cmd'] == 'CHECKINSTANCE'):

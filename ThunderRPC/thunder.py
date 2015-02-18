@@ -412,10 +412,11 @@ class ThunderRPC(threading.Thread):
                 s.send(data)
                 # wait for a response from the host
                 response = s.recv(1024).decode()
-                print(response)
                 s.close()
                 # return a colon delimited string containing the IP address of
                 # the host and its response
+                if (response == None):
+                   return 0
                 return parseMessage(response)
             except:
                 raise
