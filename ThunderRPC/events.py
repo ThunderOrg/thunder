@@ -58,8 +58,8 @@ def utilization(*params):
       activeVCores += int(dom.info()[3])
    conn.close()
 
-   retVal = createMessage(result=[memtotal,memfree,oneMin,fiveMin,
-                          fifteenMin,str(num_proc),str(activeVCores)])
+   retVal = [memtotal,memfree,oneMin,fiveMin,                                  \
+             fteenMin,str(num_proc),str(activeVCores)]
 
    return retVal
 
@@ -85,5 +85,5 @@ def sysInfo(*params):
    kernel = os.uname()[2]
    arch = os.uname()[4]
 
-   retVal = createMessage(result=[shortOsName, fullOsName, kernel, arch])
+   retVal = [shortOsName, fullOsName, kernel, arch]
    return retVal

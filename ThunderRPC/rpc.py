@@ -127,7 +127,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
             group = data['group']
             message = createMessage(cmd=data['remote_cmd'], args=data['remote_args'])
             res = self.container.publishToGroup(group, message)
-            result = createMessage(result=res['result'])
+            result = createMessage(result=res)
             if (res != None):
                 request.sendall(websock.encode(Opcode.text, result))
 
@@ -136,7 +136,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
             node = (data['ip'], int(data['port']))
             message = createMessage(cmd=data['remote_cmd'], args=data['remote_args'])
             res = self.container.publishToHost(node, message)
-            result = createMessage(result=res['result'])
+            result = createMessage(result=res)
             if (res != None):
                 request.sendall(websock.encode(Opcode.text, result))
 
@@ -252,6 +252,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
             if (self.lbMode == LBMode.RAIN or self.lbMode == LBMode.CONSOLIDATE):
                locks[index] = 0
 
+            print("Response:", response)
             ip = ''
             if (response['mac'] != None):
                ip = networking.getIPFromARP(response['mac'])
@@ -563,8 +564,6 @@ class RequestHandler(socketserver.BaseRequestHandler):
                tmp = self.container.publishToHost(node, utilization)
                load += [tmp]
 
-            print(load)
-
             selected = None
             index = -1
             if (self.lbMode == LBMode.RAIN or self.lbMode == LBMode.CONSOLIDATE):
@@ -629,6 +628,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
                locks[index] = 0
 
             ip = ''
+            print("Response:", response)
             if (response['mac'] != None):
                ip = networking.getIPFromARP(response['mac'])
             myConnector.connect()

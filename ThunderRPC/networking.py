@@ -142,6 +142,7 @@ def getIPFromDHCP(mac):
    return result
 
 def getIPFromARP(mac):
+   print("MAC:", mac)
    mac = mac.replace('-', ':')
    # Remove any previous entry for this mac address
    cmd = "/usr/sbin/arp -d `arp -an | grep " + mac + " | awk '{print $2}' | tr -d '()'`"
