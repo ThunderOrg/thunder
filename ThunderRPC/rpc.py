@@ -172,7 +172,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
             nodes = clients.get('COMPUTE')
             # Message style:
             # INSTANTIATE <VM_NAME> <USER_NAME>
-            message = createMessage(cmd=data[0], vm=data[1], user=data[2])
+            message = createMessage(cmd=data['cmd'], vm=data['vm'], user=data['user'])
             utilization = createMessage(cmd='UTILIZATION')
             error = createMessage(ip=None)
 
@@ -182,7 +182,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
                weights = [0] * 5
             elif (self.lbMode == LBMode.RAIN):
                weights = myConnector.getWeights('balance')
-            vm = myConnector.getProfileData(data[1])
+            vm = myConnector.getProfileData(data['vm'])
             myConnector.disconnect()
             load = [self.container.publishToHost(nodes[0], utilization)]
             for node in nodes[1:]:
@@ -485,11 +485,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
         if (events.contains(data['cmd'])):
             func = events.get(data['cmd'])
 
-            if ('args' in data):
-               # call the function and get the result
-               response = func(data['cmd'],data['args'])
-            else:
-               response = func(data['cmd'],[])
+            response = func(data)
             # send the result to the caller
             request.sendall(response)
 
@@ -545,6 +541,102 @@ class RequestHandler(socketserver.BaseRequestHandler):
             myConnector.disconnect()
             message = createMessage(result=0)
             request.sendall(message)
+
+        elif (data['cmd'] == 'INSTANTIATE'):
+            self.container.cleanupClients()
+            nodes = clients.get('COMPUTE')
+            # Message style:
+            # INSTANTIATE <VM_NAME> <USER_NAME>
+            message = createMessage(cmd=data['cmd'], vm=data['vm'], user=data['user'])
+            utilization = createMessage(cmd='UTILIZATION')
+            error = createMessage(ip=None)
+
+            myConnector = mysql(self.container.addr[0], 3306)
+            myConnector.connect()
+            if (self.lbMode == LBMode.CONSOLIDATE):
+               weights = [0] * 5
+            elif (self.lbMode == LBMode.RAIN):
+               weights = myConnector.getWeights('balance')
+            vm = myConnector.getProfileData(data['vm'])
+            myConnector.disconnect()
+            load = [self.container.publishToHost(nodes[0], utilization)]
+            for node in nodes[1:]:
+               tmp = self.container.publishToHost(node, utilization)
+               load += [tmp]
+
+            print(load)
+
+            selected = None
+            index = -1
+            if (self.lbMode == LBMode.RAIN or self.lbMode == LBMode.CONSOLIDATE):
+               while (1):
+                  # [memTotal, memFree, 1min, 5min, 15min, maxVCore, activeVCore]
+                  selected = load_balancer.rain_select(load, weights, vm)
+                  if (selected == None):
+                     # Couldn't find a node to instantiate the vm
+                     request.sendall(error)
+                     return
+
+                  for i in range(0, len(nodes), 1):
+                     if (nodes[i][0] == selected[0]):
+                        index = i
+
+                  if (index == -1):
+                     request.sendall(error)
+                     return
+
+                  # If we don't have enough locks, double it
+                  if (index > len(locks)):
+                     locks += [0] * len(locks) 
+
+                  if (locks[index] == 0):
+                     locks[index] = 1
+                     break
+                  else:
+                     sleep(1)
+                     load = [self.container.publishToHost(nodes[0], utilization)]
+                     for node in nodes[1:]:
+                        load += [self.container.publishToHost(node, utilization)]
+          
+            elif (self.lbMode == LBMode.ROUNDROBIN):
+               selected = load_balancer.rr_select(load, vm)
+               if (selected == None):
+                  # Couldn't find a node to instantiate the vm
+                  request.sendall(error)
+                  return
+
+               for i in range(0, len(nodes), 1):
+                  if (nodes[i][0] == selected[0]):
+                     index = i
+
+            elif (self.lbMode == LBMode.RANDOM):
+               selected = load_balancer.rand_select(load, vm)
+               if (selected == None):
+                  # Couldn't find a node to instantiate the vm
+                  request.sendall(error)
+                  return
+
+               for i in range(0, len(nodes), 1):
+                  if (nodes[i][0] == selected[0]):
+                     index = i
+
+            if (index == -1):
+               request.sendall(error)
+           
+            selectedNode = nodes[index]
+            response = self.container.publishToHost(selectedNode, message,     \
+                                                    False).split(':')
+
+            if (self.lbMode == LBMode.RAIN or self.lbMode == LBMode.CONSOLIDATE):
+               locks[index] = 0
+
+            ip = ''
+            if (response['mac'] != None):
+               ip = networking.getIPFromARP(response['mac'])
+            myConnector.connect()
+            myConnector.updateInstanceIP(response['domain'], ip)
+            myConnector.disconnect()
+            request.sendall(createMessage(ip=ip))
 
         elif (data['cmd'] == 'CHANGELBMODE'):
             mode = data['mode']

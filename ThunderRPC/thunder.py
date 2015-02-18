@@ -411,11 +411,11 @@ class ThunderRPC(threading.Thread):
                 # encode the data before sending
                 s.send(data)
                 # wait for a response from the host
-                response = s.recv(1024).decode()
+                response = s.recv(1024).decode().strip()
                 s.close()
                 # return a colon delimited string containing the IP address of
                 # the host and its response
-                if (response == None):
+                if (response == ''):
                    ret = {}
                 else:
                    ret = parseMessage(response)

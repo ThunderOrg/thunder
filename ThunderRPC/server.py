@@ -23,37 +23,14 @@ failed = 0
 total = 0
 lock = threading.Lock()
 
-# Invoke a function and return the result.
-def invoke(*params):
-   tag = params[0]
-   data = params[1]
-
-   if (len(data) > 1):
-      if (data[0] == 'CONTROL'):
-         if (data[1] == 'GET_CLIENT_LIST'):
-            return createMessage(clients=server.getClientList())
-         elif (data[1] == 'GET_CLUSTER_LIST'):
-            return createMessage(clusters=server.getClusterList())
-      elif (data[0] == 'GROUP'):
-         return server.publishToGroup(params[2], params[1])
-      elif (data[0] == 'HOST'):
-         host = (params[1], int(params[2]))
-         return server.publishToHost(host,params[3])
-   # Invalid number of params.  Return error code.
-   else:
-      return None
-
-# Instantiate NetEvent and register the invoke event
 server = ThunderRPC(role = 'PUBLISHER', group = 'CONTROLLER')
-server.registerEvent('INVOKE', invoke)
 
 def printTable(direc,fname):
    table = server.publishToGroup('COMPUTE', createMessage(cmd='UTILIZATION'))
    for machine in table:
-      print(machine)
       m = machine['result']
-      print(m)
-      print_to_file(direc,fname, m[0].split('.')[-1],round(float(m[1])/(1024*1024),2),round(float(m[2])/(1024*1024),2),m[3],m[4],m[5],m[6],m[7],sepa="\t")
+      host = machine['_HOST_']
+      print_to_file(direc,fname, host[0].split('.')[-1],round(float(m[0])/(1024*1024),2),round(float(m[1])/(1024*1024),2),m[2],m[3],m[4],m[5],m[6],sepa="\t")
 
 def startVM(profile,direc,fname):
    global total
@@ -62,7 +39,7 @@ def startVM(profile,direc,fname):
    vm = server.publishToHost(server.addr, createMessage(cmd='INSTANTIATE', vm=profile, user='admin'), False)
    turnaround = round(time() * 1000) - begin
    lock.acquire()
-   if (vm['ip'] == None):
+   if (ip not in vm or vm['ip'] == None):
       print_to_file(direc,fname, "VM" + str(total) + "\t\tFailed\t\t" + str(turnaround))
       failed += 1
    else:

@@ -14,9 +14,8 @@ import subprocess
 from thunder import *
 from message import createMessage
 
-def importImage(*params):
-   args = params[1]
-   url = args[0]
+def importImage(data):
+   url = data['url']
    imageDir = constants.get('default.imagedir')
    # Download the image from the url
    p = subprocess.Popen(['./getImage.sh', url, imageDir], stdout=subprocess.PIPE)

@@ -31,10 +31,10 @@ rain_select(nodes, weights, vm) ---
 '''
 def rain_select(nodes, weights, vm):
    rankings = getRankings(nodes, weights)
-   sortedRankings = sorted(rankings, key=lambda rank: rank[1])
+   sortedRankings = sorted(rankings, key=lambda rank: rank[2])
    for rank in sortedRankings:
       if (fits(rank[0], vm)):
-         return rank[0]
+         return rank[1]
    return None
 
 '''
@@ -52,8 +52,8 @@ getRankings(nodes, weights) ---
 def getRankings(nodes, weights):
    vec = []
    for node in reversed(nodes):
-      nodeArr = node.split(':')
-      vec.append((nodeArr, rank(nodeArr[1:], weights)))
+      nodeArr = node['result']
+      vec.append((nodeArr, node['_HOST_'], rank(nodeArr, weights)))
    return vec
 
 '''
@@ -108,8 +108,9 @@ fits(node, vm) ---
         True or False
 '''
 def fits(node, vm):
-   freeVCores = int(node[6]) - int(node[7])
-   freeRam = int(node[2])
+   print("NODE:", node)
+   freeVCores = int(node[5]) - int(node[6])
+   freeRam = int(node[1])
    if (freeVCores >= int(vm['vcpus']) and freeRam >= int(vm['ram'])):
       return True
    return False
@@ -153,12 +154,12 @@ def rr_select(nodes, vm):
          rr_reset()
 
       rr_lock.acquire()
-      node = nodes[rr_index].split(':')
+      node = nodes[rr_index]
       rr_lock.release()
       touched += 1
 
-      if (fits(node, vm)):
-         retval = node
+      if (fits(node['result'], vm)):
+         retval = node['_HOST_']
          break
       rr_lock.acquire()
       rr_index += 1
@@ -182,8 +183,8 @@ rand_select() ---
 '''
 def rand_select(nodes, vm):
    r = random.randrange(0, len(nodes), 1)
-   node = nodes[r].split(':')
+   node = nodes[r]['result']
    if (fits(node, vm)):
-      return node
+      return nodes[r]['_HOST_']
    else:
       return None

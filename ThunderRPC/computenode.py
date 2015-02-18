@@ -33,11 +33,10 @@ instantiate(*params) ---
         MAC Aaddress of virtual machine instance with colonds replaced with 
         dashesand and the domain name in the format: "<MAC>:<DOMAIN>"
 '''
-def instantiate(*params):
+def instantiate(data):
    # Get posiotional arguments
-   args = params[1]
-   name = args[0]
-   username = args[1]
+   name = data['vm']
+   username = data['user']
 
    # Get the IP of the publisher
    publisher = client.publisher[0]
@@ -89,9 +88,8 @@ destroy(*params) ---
         0 - successful
         1 - unsuccessful
 '''
-def destroy(*params):
-   args = params[1]
-   domain = args[0]
+def destroy(data):
+   domain = data['domain']
    vmDestructor = subprocess.Popen(['./destroyVM.sh', domain],                 \
                                    stdout=subprocess.PIPE)
    out, err = vmDestructor.communicate()
@@ -117,7 +115,7 @@ destroyAll(*params) ---
         0 - successful
         1 - unsuccessful
 '''
-def destroyAll(*params):
+def destroyAll(data):
    vmDestructor = subprocess.Popen('./destroyAll.sh',                          \
                                    stdout=subprocess.PIPE)
    out, err = vmDestructor.communicate()
