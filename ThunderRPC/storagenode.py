@@ -12,7 +12,7 @@ Cloud and Cluster Computing Group
 # Imports
 import subprocess
 from thunder import *
-from message import createMessage
+from networking import createMessage
 
 def importImage(data):
    url = data['url']

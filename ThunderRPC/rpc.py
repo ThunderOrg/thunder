@@ -11,10 +11,10 @@ Cloud and Cluster Computing Group
 
 # Imports
 import auth, socket, socketserver, threading, libvirt, load_balancer 
-import subprocess, shutil, fileinput, networking, threading, os, urllib.request
+import subprocess, shutil, fileinput, threading, os, urllib.request
 import threadpool
 from websocket import *
-from message import createMessage, parseMessage
+from networking import * 
 from mysql_support import *
 from time import sleep
 from enum import Enum
@@ -255,7 +255,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
             response = response['result']
             ip = ''
             if ('mac' in response and response['mac'] != ''):
-               ip = networking.getIPFromARP(response['mac'])
+               ip = getIPFromARP(response['mac'])
             myConnector.connect()
             myConnector.updateInstanceIP(response['domain'], ip)
             myConnector.disconnect()
@@ -401,7 +401,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
             macs = data['macs']
             print(macs)
             for mac in macs:
-               oldDHCPTime = networking.getDHCPRenewTime(mac)
+               oldDHCPTime = getDHCPRenewTime(mac)
                tftpDir = constants.get('default.tftpdir')
                shutil.copyfile('pxetemplate.cfg', tftpDir +                    \
                                '/pxelinux.cfg/01-' + mac)
@@ -457,7 +457,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
     def detectDHCPRenew(self, mac, time):
         changed = False
         while (not changed):
-           newTime = networking.getDHCPRenewTime(mac)
+           newTime = getDHCPRenewTime(mac)
            if newTime != time:
               changed = True
               print('Detected DHCP renew of MAC:', mac)
