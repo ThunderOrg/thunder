@@ -64,7 +64,10 @@ def instantiate(data):
    config = image['config']
    ram = str(profile['ram'])
    vcpus = str(profile['vcpus'])
-   dest_dir = constants.get('default.imagedir')+"/"+domain
+   dest_dir = constants.get('default.imagedir')
+   if (not os.path.exists(dest_dir+"/"+domain):
+       shutil.mkdir(dest_dir+"/"+domain)
+       shutil.chown(dest_dir+"/"+domain, user=thunder, group=thunder)
 
    # clone the image and install into virsh
    virtHelper = subprocess.Popen(['./cloneAndInstall.sh', archive, domain,     \
