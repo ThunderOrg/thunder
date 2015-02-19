@@ -11,15 +11,11 @@ dest=$8
 
 #{
 cd $dest
-mkdir $domain
-
 # create a storage pool for this domain
 virsh pool-define-as $domain dir - - - - $dest/$domain
 virsh pool-build $domain
 virsh pool-start $domain
 
-mv $archive $domain/
-cd $domain
 tar xf $archive
 rm $archive
 
