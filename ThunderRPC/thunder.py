@@ -337,6 +337,7 @@ class ThunderRPC(threading.Thread):
                  response = createMessage(role=self.role, ip=self.addr[0])
                  receiver.sendto(response, addr)
            except:
+              raise
               print('Error during multicast receive')
               pass
 
@@ -366,7 +367,7 @@ class ThunderRPC(threading.Thread):
                 data, addr = sender.recvfrom(1024)
                 response = parseMessage(data)
                 if (response[0] == 'PUBLISHER'):
-                    address = (resonse[1],SERVER_PORT)
+                    address = (response[1],SERVER_PORT)
                     found = True
             except KeyboardInterrupt:
                 raise
