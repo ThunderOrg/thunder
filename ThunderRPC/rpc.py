@@ -251,7 +251,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
 
             response = response['result']
             ip = ''
-            if (response['mac'] != None):
+            if (mac in response and response['mac'] != ''):
                ip = networking.getIPFromARP(response['mac'])
             myConnector.connect()
             myConnector.updateInstanceIP(response['domain'], ip)
@@ -628,8 +628,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
 
             ip = ''
             response = response['result']
-            print(response)
-            if (response['mac'] != None):
+            if (mac in response and response['mac'] != ''):
                ip = networking.getIPFromARP(response['mac'])
             myConnector.connect()
             myConnector.updateInstanceIP(response['domain'], ip)
