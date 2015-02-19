@@ -10,11 +10,7 @@ vcpus=$7
 dest=$8
 
 {
-cd $dest
-mkdir $domain
-cp $archive ./$domain
-cd $domain
-
+cd $dest/$domain
 tar xf $archive
 rm $archive
 

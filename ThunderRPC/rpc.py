@@ -134,7 +134,11 @@ class RequestHandler(socketserver.BaseRequestHandler):
             node = (data['ip'], int(data['port']))
             message = createMessage(cmd=data['remote_cmd'], args=data['remote_args'])
             res = self.container.publishToHost(node, message)
-            result = createMessage(result=res['result'])
+            if ('result' in res):
+               result = createMessage(result=res['result'])
+            else:
+               print("Result not in res? ", res)
+               result = str(res).encode('UTF8')
             request.sendall(websock.encode(Opcode.text, result))
 
         # check if the client is requesting a list of clusters available

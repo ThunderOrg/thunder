@@ -108,7 +108,6 @@ fits(node, vm) ---
         True or False
 '''
 def fits(node, vm):
-   print("NODE:", node)
    freeVCores = int(node[5]) - int(node[6])
    freeRam = int(node[1])
    if (freeVCores >= int(vm['vcpus']) and freeRam >= int(vm['ram'])):
