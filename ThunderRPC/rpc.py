@@ -233,15 +233,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
                for i in range(0, len(nodes), 1):
                   if (nodes[i][0] == selected[0]):
                      index = i
-
-               if (index > len(locks)):
-                  locks += [0] * len(locks) 
-
-               if (locks[index] == 0):
-                  locks[index] = 1
-               else:
-                  while (locks[index] == 1):
-                     sleep(1)
+                     break
 
             if (index == -1):
                request.sendall(websock.encode(Opcode.text, error))
@@ -336,7 +328,6 @@ class RequestHandler(socketserver.BaseRequestHandler):
                fp.write(mode)
                fp.close()
             except:
-               raise
                print(mode,"is not a valid load balance mode.")
             message = createMessage(result=0)
             request.sendall(websock.encode(Opcode.text, message))

@@ -337,7 +337,6 @@ class ThunderRPC(threading.Thread):
                  response = createMessage(role=self.role, ip=self.addr[0])
                  receiver.sendto(response, addr)
            except:
-              raise
               print('Error during multicast receive')
               pass
 
@@ -421,7 +420,6 @@ class ThunderRPC(threading.Thread):
                 ret['_HOST_'] = host
                 return ret
             except:
-                raise
                 print('Host', host[0] + ':' + str(host[1]),                    \
                       'didn\'t respond.  Trying again.')
             count += 1
@@ -451,11 +449,13 @@ class ThunderRPC(threading.Thread):
         if (self.clients.contains(group)):
             addresses = self.clients.get(group)
             for addr in addresses:
-                val = self.publishToHost(addr, data, timeout)
-                if (val != None):
-                    ret += [val]
-        if (len(ret) > 0):
-            return ret
+                try:
+                    val = self.publishToHost(addr, data, timeout)
+                    if (val != None):
+                         ret += [val]
+                except:
+                   print("Timeout in communicating with", addr)
+        return ret
 
     '''
     registerEvent() ---
