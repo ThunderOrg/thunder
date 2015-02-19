@@ -78,9 +78,9 @@ while(1):
       if not os.path.exists("./tests/" + fname + "/"):
          os.makedirs("./tests/" + fname + "/")
 
-      i = 1
-      while (i >= 1):
-         for x in range(0, 1, 1):
+      i = 35
+      while (i >= 25):
+         for x in range(0, 5, 1):
             total = 0
             failed = 0
             #print_to_file("DATA_"+str(i)+"_"+str(x), "Testing", i, "Instantiations")

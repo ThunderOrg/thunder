@@ -396,6 +396,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
         elif (data['cmd'] == 'DEPLOY'):
             role = data['role']
             macs = data['macs']
+            print(macs)
             for mac in macs:
                oldDHCPTime = networking.getDHCPRenewTime(mac)
                tftpDir = constants.get('default.tftpdir')
@@ -414,7 +415,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
                t = threading.Thread(target = self.detectDHCPRenew,             \
                                     args = (mac, oldDHCPTime, ))
                t.start()
-            createMessage(result=1)
+            message = createMessage(result=1)
             request.sendall(websock.encode(Opcode.text, message))
 
         elif (data['cmd'] == "REBOOTNODE"):
