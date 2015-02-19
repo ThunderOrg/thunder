@@ -366,8 +366,8 @@ class ThunderRPC(threading.Thread):
             try:
                 data, addr = sender.recvfrom(1024)
                 response = parseMessage(data)
-                if (response[0] == 'PUBLISHER'):
-                    address = (response[1],SERVER_PORT)
+                if ('role' in response and response['role'] == 'PUBLISHER'):
+                    address = (response['ip'],SERVER_PORT)
                     found = True
             except KeyboardInterrupt:
                 raise
