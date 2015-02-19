@@ -125,7 +125,7 @@ class ThunderRPC(threading.Thread):
             self.mcastThread = threading.Thread(target = self.multicastThread)
             self.mcastThread.start()
             self._IP = socket.gethostbyname(socket.gethostname()) 
-            if (self.addr[0].startswith(127)):
+            if (self.addr[0].startswith('127')):
                self._IP = '0.0.0.0';
             if (self.clients.contains(self.group)): 
                c = self.clients.get(self.group)
