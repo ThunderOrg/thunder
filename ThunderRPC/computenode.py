@@ -66,20 +66,14 @@ def instantiate(data):
    vcpus = str(profile['vcpus'])
    dest_dir = constants.get('default.imagedir')
 
-   print("Archive:", archive)
-   print("Domain:", domain)
-   print("Disk:", disk)
-   print("Overlay:", overlay)
-   print("config:", config)
-   print("ram:", ram)
-   print("vcpus:", vcpus)
-   print("dest_dir:", dest_dir)
    # clone the image and install into virsh
    virtHelper = subprocess.Popen(['./cloneAndInstall.sh', archive, domain,     \
                                   disk, overlay, config, ram, vcpus,           \
                                   dest_dir], stdout=subprocess.PIPE,           \
                                   stderr=subprocess.PIPE)
    out, err = virtHelper.communicate()
+   print(out)
+   print(err)
    mac = out.decode().rstrip().replace(':','-')
    result = {}
    result['mac'] = mac

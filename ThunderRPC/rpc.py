@@ -127,19 +127,15 @@ class RequestHandler(socketserver.BaseRequestHandler):
             group = data['group']
             message = createMessage(cmd=data['remote_cmd'], args=data['remote_args'])
             res = self.container.publishToGroup(group, message)
-            result = createMessage(result=res)
-            if (res != None):
-                request.sendall(websock.encode(Opcode.text, result))
+            request.sendall(websock.encode(Opcode.text, res))
 
         # check if the client is requesting data from a node
         elif (data['cmd'] == 'EXECNODE'):
             node = (data['ip'], int(data['port']))
             message = createMessage(cmd=data['remote_cmd'], args=data['remote_args'])
             res = self.container.publishToHost(node, message)
-            print(res)
-            result = createMessage(result=res)
-            if (res != None):
-                request.sendall(websock.encode(Opcode.text, result))
+            result = createMessage(result=res['result'])
+            request.sendall(websock.encode(Opcode.text, result))
 
         # check if the client is requesting a list of clusters available
         elif (data['cmd'] == 'GROUPNAMES'):
@@ -488,7 +484,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
 
             response = func(data)
             # send the result to the caller
-            request.sendall(createMessage(_WRAPPER_=response))
+            request.sendall(createMessage(result=response))
 
         # check if the request is a query for the service role
         # (PUBLISHER | SUBSCRIBER)
