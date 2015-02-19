@@ -363,7 +363,7 @@ class ThunderRPC(threading.Thread):
         while(not found):
             sender.sendto(createMessage(cmd='ROLE'), (MCAST_GRP, MCAST_PORT))
             try:
-                data = sender.recvfrom(1024)
+                data, addr = sender.recvfrom(1024)
                 response = parseMessage(data)
                 if (response[0] == 'PUBLISHER'):
                     address = (resonse[1],SERVER_PORT)
