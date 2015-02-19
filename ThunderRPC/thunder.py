@@ -331,7 +331,7 @@ class ThunderRPC(threading.Thread):
         while 1:
            try:
               data, addr = receiver.recvfrom(1024)
-              msg = parseMessage(data.decode())
+              msg = parseMessage(data)
               if ('cmd' in msg and msg['cmd'] == 'ROLE'):
                  # pack the role up with the client IP
                  response = createMessage(role=self.role, ip=self.addr[0])
@@ -364,7 +364,7 @@ class ThunderRPC(threading.Thread):
             sender.sendto(createMessage(cmd='ROLE'), (MCAST_GRP, MCAST_PORT))
             try:
                 data = sender.recvfrom(1024)
-                response = parseMessage(data.decode())
+                response = parseMessage(data)
                 if (response[0] == 'PUBLISHER'):
                     address = (resonse[1],SERVER_PORT)
                     found = True
