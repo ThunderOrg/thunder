@@ -136,6 +136,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
             node = (data['ip'], int(data['port']))
             message = createMessage(cmd=data['remote_cmd'], args=data['remote_args'])
             res = self.container.publishToHost(node, message)
+            print(res)
             result = createMessage(result=res)
             if (res != None):
                 request.sendall(websock.encode(Opcode.text, result))
@@ -487,7 +488,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
 
             response = func(data)
             # send the result to the caller
-            request.sendall(response)
+            request.sendall(createMessage(_WRAPPER_=response))
 
         # check if the request is a query for the service role
         # (PUBLISHER | SUBSCRIBER)
