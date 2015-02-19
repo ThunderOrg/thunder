@@ -333,7 +333,7 @@ class ThunderRPC(threading.Thread):
               data, addr = receiver.recvfrom(1024)
               if (data.decode() == 'ROLE'):
                  # pack the role up with the client IP
-                 response = self.role + '|' + addr[0]
+                 response = self.role + '|' + self._IP
                  receiver.sendto(response.encode('UTF8'), addr)
            except:
               print('Error during multicast receive')
@@ -365,11 +365,10 @@ class ThunderRPC(threading.Thread):
                 data, addr = sender.recvfrom(1024)
                 response = data.decode().split('|')
                 if (response[0] == 'PUBLISHER'):
-                    address = (addr[0],SERVER_PORT)
+                    address = (resonse[1],SERVER_PORT)
                     # if the service is bound globally, replace the IP with the
                     # correct one.  also find the correct interface
-                    if (self.interface == 'ALL'):
-                        self._IP = response[1]
+                    #self._IP = response[1]
                     found = True
             except KeyboardInterrupt:
                 raise
