@@ -249,7 +249,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
             if (self.lbMode == LBMode.RAIN or self.lbMode == LBMode.CONSOLIDATE):
                locks[index] = 0
 
-            print("Response:", response)
+            response = response['result']
             ip = ''
             if (response['mac'] != None):
                ip = networking.getIPFromARP(response['mac'])
@@ -285,6 +285,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
             myConnector.connect()
             instances = myConnector.getUserInstances(username)
             result = 'error'
+            print(data)
             for instance in eval(instances):
                if (instance[0] == domain):
                   node = myConnector.getNodeByName(instance[2])
@@ -625,7 +626,8 @@ class RequestHandler(socketserver.BaseRequestHandler):
                locks[index] = 0
 
             ip = ''
-            print("Response:", response)
+            response = response['result']
+            print(response)
             if (response['mac'] != None):
                ip = networking.getIPFromARP(response['mac'])
             myConnector.connect()

@@ -37,9 +37,10 @@ def startVM(profile,direc,fname):
    global failed
    begin = round(time() * 1000)
    vm = server.publishToHost(server.addr, createMessage(cmd='INSTANTIATE', vm=profile, user='admin'), False)
+   print(vm)
    turnaround = round(time() * 1000) - begin
    lock.acquire()
-   if (ip not in vm or vm['ip'] == None):
+   if ('ip' not in vm or vm['ip'] == None):
       print_to_file(direc,fname, "VM" + str(total) + "\t\tFailed\t\t" + str(turnaround))
       failed += 1
    else:
@@ -77,9 +78,9 @@ while(1):
       if not os.path.exists("./tests/" + fname + "/"):
          os.makedirs("./tests/" + fname + "/")
 
-      i = 35
-      while (i >= 25):
-         for x in range(0, 5, 1):
+      i = 1
+      while (i >= 1):
+         for x in range(0, 1, 1):
             total = 0
             failed = 0
             #print_to_file("DATA_"+str(i)+"_"+str(x), "Testing", i, "Instantiations")
