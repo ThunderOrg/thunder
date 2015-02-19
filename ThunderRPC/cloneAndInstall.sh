@@ -10,8 +10,10 @@ vcpus=$7
 dest=$8
 
 #{
-cd $dest/$domain
-cp ../$archive ./
+cd $dest
+mkdir $domain
+cp $archive ./$domain
+cd $domain
 
 # create a storage pool for this domain
 virsh pool-define-as $domain dir - - - - $dest/$domain
