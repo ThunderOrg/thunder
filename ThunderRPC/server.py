@@ -37,7 +37,6 @@ def startVM(profile,direc,fname):
    global failed
    begin = round(time() * 1000)
    vm = server.publishToHost(server.addr, createMessage(cmd='INSTANTIATE', vm=profile, user='admin'), False)
-   print(vm)
    turnaround = round(time() * 1000) - begin
    lock.acquire()
    if ('ip' not in vm or vm['ip'] == None):
