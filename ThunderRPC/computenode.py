@@ -72,8 +72,6 @@ def instantiate(data):
                                   dest_dir], stdout=subprocess.PIPE,           \
                                   stderr=subprocess.PIPE)
    out, err = virtHelper.communicate()
-   print(out.decode())
-   print(err.decode())
    mac = out.decode().rstrip().replace(':','-')
    result = {}
    result['mac'] = mac
@@ -158,7 +156,6 @@ def copyFromNAS(imageName, name, server):
    dest_dir = constants.get('default.imagedir')
 
    fname = dest_dir + '/' + name
-
    dest = open(fname, 'wb')
    shutil.copyfileobj(src,dest)
 
