@@ -56,7 +56,7 @@ def instantiate(data):
 
    # transfer the archive over
    archive = image['archive']
-   copyFromNAS(archive, archive, nas)
+   copyFromNAS(archive, archive, nas, domain)
 
    # collect data about the archive contents
    disk = image['disk']
