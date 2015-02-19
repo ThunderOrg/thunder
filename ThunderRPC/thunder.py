@@ -11,7 +11,6 @@ Cloud and Cluster Computing Group
 
 # Imports
 import auth, threading, socket, socketserver, sys, platform, struct 
-from message import *
 from interface import interface
 from dictionary import *
 from websocket import *
@@ -20,6 +19,7 @@ from time import sleep
 from config import *
 from uuid import uuid1, getnode
 import events as builtinEvents
+from networking import *
 
 # ensure that the address used by the service can be reused if it crashes.
 socketserver.TCPServer.allow_reuse_address = True
@@ -33,7 +33,6 @@ SERVER_PORT = constants.get('server.port')
 class ThunderRPC(threading.Thread):
     # local imports
     import rpc
-    import networking
 
     '''
     constructor ---
@@ -117,7 +116,7 @@ class ThunderRPC(threading.Thread):
         self._group = group
 
         # give this node an arbitrary name
-        self._name = self.networking.getMAC(getnode())
+        self._name = getMAC(getnode())
  
         # set the default publisher to None
         self._publisher = None
@@ -138,7 +137,7 @@ class ThunderRPC(threading.Thread):
                                       str(self.addr[1]), self.group)
                myConnector.disconnect()
             # recreate preseeding files from template
-            self.networking.generatePreseed(self._IP)
+            generatePreseed(self._IP)
 
         # start the thread
         self.start()

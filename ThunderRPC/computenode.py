@@ -16,7 +16,7 @@ from thunder import *
 from smb.SMBHandler import SMBHandler
 from uuid import uuid1
 from time import sleep
-from message import createMessage
+from networking import createMessage
 
 '''
 instantiate(*params) ---

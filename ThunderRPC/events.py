@@ -13,7 +13,7 @@ Cloud and Cluster Computing Group
 import os
 import platform
 import libvirt
-from message import * 
+from networking import createMessage, parseMessage
 
 '''
 utilization(*params) ---
