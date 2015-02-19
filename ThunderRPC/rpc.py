@@ -209,6 +209,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
                      request.sendall(websock.encode(Opcode.text, error))
                      return
 
+                  global locks
                   # If we don't have enough locks, double it
                   if (index > len(locks)):
                      locks += [0] * len(locks) 

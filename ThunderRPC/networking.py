@@ -21,17 +21,13 @@ getIP(interface) ---
         Finds the IP address of the given interface
 
     Expected positional arguments:
-        interface - The name of an interface, or 'ALL'
+        interface - The name of an interface
 
     Expected return value:
-        '0.0.0.0' if interface == 'ALL'
         The IP address if interface is valid
         '127.0.0.1' otherwise
 '''
 def getIP(interface):
-    if (interface == 'ALL'):
-        return '0.0.0.0'
-
     p = subprocess.Popen(['/sbin/ifconfig', interface.strip()],                \
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     ifconfig = p.communicate()[0]
@@ -41,7 +37,6 @@ def getIP(interface):
             item = item.strip()
             # find the IP address from the ifconfig output
             if (item.startswith('inet ')):
-                print(item)
                 if (platform.system() == 'Darwin'):
                     return item.split(' ')[1]
                 else:

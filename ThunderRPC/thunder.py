@@ -12,6 +12,7 @@ Cloud and Cluster Computing Group
 # Imports
 import auth, threading, socket, socketserver, sys, platform, struct 
 from message import *
+from interface import interface
 from dictionary import *
 from websocket import *
 from mysql_support import mysql
@@ -59,10 +60,10 @@ class ThunderRPC(threading.Thread):
 
         # check the role of the service to determine the proper configuration
         if (role == 'PUBLISHER'):
-            interface = constants.get('server.interface')
+            iface = constants.get('server.interface')
             port = SERVER_PORT
         elif (role == 'SUBSCRIBER'):
-            interface = constants.get('default.interface')
+            iface = constants.get('default.interface')
             port = constants.get('default.port')
         else:
             print('Invalid role identifer.  Must be either ' +                  \
@@ -71,7 +72,7 @@ class ThunderRPC(threading.Thread):
 
         # set the interface variable, which is the interface that we want to
         # bind the service to
-        self._interface = interface
+        self._interface = iface
 
         # set the role ('PUBLISHER' | 'SUBSCRIBER')
         self._role = role
@@ -80,8 +81,9 @@ class ThunderRPC(threading.Thread):
         # value does not matter.
         self._nonce = 'DEADBEEF'
 
+        iface_tool = interface()
         # get the IP address of the system
-        self._IP = self.networking.getIP(interface)
+        self._IP = iface_tool.getAddr(iface)
 
         # create a TCP server, and bind it to the address of the desired
         # interface
@@ -124,9 +126,6 @@ class ThunderRPC(threading.Thread):
             # startup a multicasting thread to respond to multicast messages
             self.mcastThread = threading.Thread(target = self.multicastThread)
             self.mcastThread.start()
-            self._IP = socket.gethostbyname(socket.gethostname()) 
-            if (self.addr[0].startswith('127')):
-               self._IP = '0.0.0.0';
             if (self.clients.contains(self.group)): 
                c = self.clients.get(self.group)
                c.append((self.addr[0], int(self.addr[1])))

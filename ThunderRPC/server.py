@@ -24,7 +24,7 @@ total = 0
 lock = threading.Lock()
 
 server = ThunderRPC(role = 'PUBLISHER', group = 'CONTROLLER')
-
+'''
 def printTable(direc,fname):
    table = server.publishToGroup('COMPUTE', createMessage(cmd='UTILIZATION'))
    for machine in table:
@@ -114,3 +114,4 @@ while(1):
             server.publishToGroup('COMPUTE', createMessage(cmd='DESTROYALL'))
             sleep(60)
          i -= 5
+'''
