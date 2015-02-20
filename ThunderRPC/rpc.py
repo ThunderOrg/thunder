@@ -80,7 +80,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
     '''
     def handle(self):
         self.container = self.server._ThunderRPCInstance
-        self.data = self.request.recv(1024)
+        self.data = self.request.recv(2048)
         websock = websocket(self.request)
         decodedData = ''
         ws = False
@@ -242,8 +242,6 @@ class RequestHandler(socketserver.BaseRequestHandler):
             response = self.container.publishToHost(selectedNode, message, False)
             locks[index] = 0
 
-            print(response)
-
             response = response['result']
             ip = ''
             if ('mac' in response and response['mac'] != ''):
@@ -280,7 +278,6 @@ class RequestHandler(socketserver.BaseRequestHandler):
             myConnector.connect()
             instances = myConnector.getUserInstances(username)
             result = 'error'
-            print(data)
             for instance in eval(instances):
                if (instance[0] == domain):
                   node = myConnector.getNodeByName(instance[2])
@@ -390,7 +387,6 @@ class RequestHandler(socketserver.BaseRequestHandler):
         elif (data['cmd'] == 'DEPLOY'):
             role = data['role']
             macs = data['macs']
-            print(macs)
             for mac in macs:
                oldDHCPTime = getDHCPRenewTime(mac)
                tftpDir = constants.get('default.tftpdir')
@@ -416,7 +412,6 @@ class RequestHandler(socketserver.BaseRequestHandler):
             p = subprocess.Popen(['sudo','reboot'], stdout=subprocess.PIPE,             \
                                  stderr=subprocess.PIPE)
             out = p.communicate()
-            print(out)
             
         else:
             print('DATA:',data)

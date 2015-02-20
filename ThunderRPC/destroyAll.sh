@@ -7,9 +7,7 @@ for domain in $domains; do
    virsh undefine $domain
    virsh pool-destroy $domain 
    virsh pool-undefine $domain 
-   rm -r /srv/images/$domain
-   rm -r /srv/images/$domain
 done
 } > /dev/null 2>&1
 
-echo domains
+echo $domains
