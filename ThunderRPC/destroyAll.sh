@@ -6,6 +6,7 @@ for domain in $domains; do
    virsh destroy $domain
    virsh undefine $domain
    virsh pool-destroy $domain
+   virsh pool-delete $domain
    virsh pool-undefine $domain
 done
 } > /dev/null 2>&1

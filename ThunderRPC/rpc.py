@@ -630,8 +630,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
             response = self.container.publishToHost(selectedNode, message, False)
             locks[index] = 0
 
-            ip = ''
-            print(response)
+            ip = None
             if ('result' in response):
                 response = response['result']
                 if ('mac' in response and response['mac'] != ''):
