@@ -24,7 +24,7 @@ total = 0
 lock = threading.Lock()
 
 server = ThunderRPC(role = 'PUBLISHER', group = 'CONTROLLER')
-'''
+
 def printTable(direc,fname):
    table = server.publishToGroup('COMPUTE', createMessage(cmd='UTILIZATION'))
    for machine in table:
@@ -77,8 +77,8 @@ while(1):
       if not os.path.exists("./tests/" + fname + "/"):
          os.makedirs("./tests/" + fname + "/")
 
-      i = 35
-      while (i >= 25):
+      i = 20
+      while (i >= 20):
          for x in range(0, 5, 1):
             total = 0
             failed = 0
@@ -114,4 +114,4 @@ while(1):
             server.publishToGroup('COMPUTE', createMessage(cmd='DESTROYALL'))
             sleep(60)
          i -= 5
-'''
+
