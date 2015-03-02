@@ -1,12 +1,12 @@
 #!/bin/bash
 {
-domains=`virsh list | awk '{print $2}' | sed '1,2d' | sed '$d'`
+domains=`virsh pool-list --all | awk '{print $1}' | sed '1,2d' | sed '$d'`
 
 for domain in $domains; do
    virsh destroy $domain
    virsh undefine $domain
-   virsh pool-destroy $domain 
-   virsh pool-undefine $domain 
+   virsh pool-destroy $domain
+   virsh pool-undefine $domain
 done
 } > /dev/null 2>&1
 

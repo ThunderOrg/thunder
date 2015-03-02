@@ -60,6 +60,7 @@ def print_to_file(*data, sepa=' '):
 profiles = ['ubuntu_bare_small', 'ubuntu_bare_medium', 'ubuntu_bare_large']
 while(1):
    input("Press enter to start...")
+   server.publishToGroup('COMPUTE', createMessage(cmd='DESTROYALL'))
    for fname in glob.glob('*.in'): 
       fp = open(fname, 'r')
       if (fname == 'random.in'):

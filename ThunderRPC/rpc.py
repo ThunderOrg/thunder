@@ -630,13 +630,15 @@ class RequestHandler(socketserver.BaseRequestHandler):
             response = self.container.publishToHost(selectedNode, message, False)
             locks[index] = 0
 
-            response = response['result']
             ip = ''
-            if ('mac' in response and response['mac'] != ''):
-               ip = getIPFromARP(response['mac'])
-            myConnector.connect()
-            myConnector.updateInstanceIP(response['domain'], ip)
-            myConnector.disconnect()
+            print(response)
+            if ('result' in response):
+                response = response['result']
+                if ('mac' in response and response['mac'] != ''):
+                    ip = getIPFromARP(response['mac'])
+                    myConnector.connect()
+                    myConnector.updateInstanceIP(response['domain'], ip)
+                    myConnector.disconnect()
             request.sendall(createMessage(ip=ip))
 
 
