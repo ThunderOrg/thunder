@@ -218,7 +218,6 @@ class RequestHandler(socketserver.BaseRequestHandler):
                      locks[index] = 1
                      break
                   else:
-                     sleep(1)
                      load = [self.container.publishToHost(nodes[0], utilization)]
                      for node in nodes[1:]:
                         load += [self.container.publishToHost(node, utilization)]
@@ -525,7 +524,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
         elif (data['cmd'] == 'UPDATERAIN'):
             myConnector = mysql(self.container.addr[0], 3306)
             myConnector.connect()
-            myConnector.updateWeights('balance', data[1:])
+            myConnector.updateWeights('balance', data['constants'])
             myConnector.disconnect()
             message = createMessage(result=0)
             request.sendall(message)
@@ -613,6 +612,18 @@ class RequestHandler(socketserver.BaseRequestHandler):
 
             elif (self.lbMode == LBMode.ROUNDROBIN):
                selected = load_balancer.rr_select(load, vm)
+               if (selected == None):
+                  # Couldn't find a node to instantiate the vm
+                  request.sendall(error)
+                  return
+
+               for i in range(0, len(nodes), 1):
+                  if (nodes[i][0] == selected[0]):
+                     index = i
+                     break
+
+            elif (self.lbMode == LBMode.RANDOM):
+               selected = load_balancer.rand_select(load, vm)
                if (selected == None):
                   # Couldn't find a node to instantiate the vm
                   request.sendall(error)

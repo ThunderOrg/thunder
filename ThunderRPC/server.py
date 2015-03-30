@@ -61,7 +61,7 @@ profiles = ['ubuntu_bare_small', 'ubuntu_bare_medium', 'ubuntu_bare_large']
 while(1):
    input("Press enter to start...")
    server.publishToGroup('COMPUTE', createMessage(cmd='DESTROYALL'))
-   for fname in glob.glob('*.in'): 
+   for fname in sorted(glob.glob('*.in')):
       fp = open(fname, 'r')
       if (fname == 'random.in'):
          server.publishToHost(server.addr, createMessage(cmd="CHANGELBMODE", mode="RANDOM"), False)    
@@ -79,13 +79,13 @@ while(1):
          os.makedirs("./tests/" + fname + "/")
 
       i = 20
-      while (i >= 20):
+      while (i >= 15):
          for x in range(0, 5, 1):
             total = 0
             failed = 0
-            #print_to_file("DATA_"+str(i)+"_"+str(x), "Testing", i, "Instantiations")
             printTable(fname,"BEFORE_"+str(i)+"_"+str(x))
             threads = []
+            random.seed(217645199)
             for y in range(0, i, 1):
                p = random.choice(profiles)
                t = threading.Thread(target=startVM, args=(p,fname,"DATA_"+str(i)+"_"+str(x)))
