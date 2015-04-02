@@ -78,8 +78,8 @@ while(1):
       if not os.path.exists("./tests/" + fname + "/"):
          os.makedirs("./tests/" + fname + "/")
 
-      i = 20
-      while (i >= 15):
+      i = 40
+      while (i == 40):
          for x in range(0, 5, 1):
             total = 0
             failed = 0
